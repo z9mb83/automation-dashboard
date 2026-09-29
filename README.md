@@ -3,6 +3,8 @@
 Live, password-protected dashboard for the **Automation Control Center** sheet
 (mail + WhatsApp for Shaadi Bells, 99 Marketing, 99 Staffing, Property Experts, Skyline Capital).
 
+**Live: https://automation-dashboard-sigma-rose.vercel.app** (Vercel project `automation-dashboard`, team 99Marketing, Hobby plan).
+
 It only **reads** data. The sending tools live in the other repo,
 [`unified-communication-automation`](https://github.com/linkwithmarketing-design/unified-communication-automation);
 a problem here can never stop mail or WhatsApp.
@@ -31,13 +33,26 @@ The page refreshes every minute; the sheet feed caches for 30 seconds.
 Without `SHEET_API_URL`/`SHEET_API_KEY` the page shows clearly-labelled **sample data**.
 Changing the password or key signs everyone out.
 
+## Deploying (Vercel)
+Already set up (29 Sep 2026). For reference / to rebuild from scratch:
+1. Sheet: menu **AUTOMATION -> Dashboard -> Create access key** (copy all 64 characters) and **Show feed link**.
+2. vercel.com/new -> Import `automation-dashboard` (GitHub access limited to this repo if you like). Preset: Next.js.
+3. **Before the first deploy**, add all three Environment Variables: `SHEET_API_URL`, `SHEET_API_KEY`, `DASHBOARD_PASSWORD`.
+   If the project already exists, add/edit them only in **Settings -> Environment Variables** - values typed into
+   the import form afterwards are not saved.
+4. Deploy. Every push to `main` deploys again automatically.
+5. After changing a setting: **Deployments -> latest -> ... -> Redeploy** (settings apply only to new deployments).
+
 ## Repair guide
 | Problem on the page | Fix | File |
 |---|---|---|
-| "Could not refresh: feed: unauthorized" | Key in Vercel ≠ key in sheet: create a new key, paste it into Vercel, redeploy | sheet menu / `SHEET_API_KEY` |
+| "feed: unauthorized ... (N characters; a sheet key has 64)" | Key in Vercel ≠ key in sheet (on 29 Sep a 114-character value had been pasted): create a new key, paste exactly the 64 characters into `SHEET_API_KEY`, Redeploy | sheet menu / `SHEET_API_KEY` |
+| Setting changed but no effect | Redeploy (see Deploying, step 5) | Vercel |
+| Deployment shows `Canceled` | It was stopped before finishing - Redeploy and let it run (~1 minute) | Vercel |
 | "feed did not return JSON" | Web app not deployed with access **Anyone**, or wrong URL | `common/Dashboard.gs` deployment |
 | "snapshot failed: …" | A tab was renamed/removed; run **Set up / repair tabs** | `common/Dashboard.gs` (`dbSnapshot_`) |
-| Page says "Dashboard password is not configured" | Set `DASHBOARD_PASSWORD` in Vercel and redeploy | `middleware.js` |
+| Page says "Dashboard password is not configured" | Set `DASHBOARD_PASSWORD` in **Settings -> Environment Variables** and redeploy | `middleware.js` |
+| Feed code changed in the sheet but data looks old | The Apps Script web app serves a fixed version: **Deploy -> Manage deployments -> edit -> New version** | `common/Dashboard.gs` deployment |
 | Wrong number on a tile/chart | Counting rules | `common/Dashboard.gs` (`dbLeadStats_`), `app/page.js` |
 | Chart looks wrong | Chart drawing | `components/charts.js`, colours in `app/globals.css` |
 
