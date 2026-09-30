@@ -150,3 +150,20 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 .login-card button { margin-top: 6px; padding: 9px 12px; border: 0; border-radius: 8px; background: var(--text-primary); color: var(--page); font-weight: 600; cursor: pointer; }
 .err { color: var(--critical); margin: 0; }
 .stale { opacity: 0.55; transition: opacity 0.2s; }
+
+.tabs { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+.tabs .back { font-size: 13px; }
+.choice { text-align: left; cursor: pointer; display: block; width: 100%; font: inherit; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.choice:hover, .choice:focus-visible { border-color: var(--series-1); box-shadow: 0 2px 10px rgba(0,0,0,0.06); outline: none; }
+.choice-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.choice-head h2 { font-size: 18px; }
+.choice-ic { width: 26px; height: 26px; color: var(--series-1); }
+.chev { margin-left: auto; color: var(--text-muted); font-size: 18px; }
+.choice-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+.choice-stats .value { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.choice-stats .label { font-size: 12px; color: var(--text-secondary); }
+.reply { padding: 10px 0; border-bottom: 1px solid var(--grid); }
+.reply:last-child { border-bottom: 0; }
+.reply-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12.5px; }
+.msg { margin: 6px 0 0; padding: 8px 12px; background: var(--wash); border-radius: 10px; border-left: 3px solid var(--series-3); white-space: pre-wrap; word-break: break-word; }
+@media (max-width: 560px) { .choice-stats .value { font-size: 22px; } }
