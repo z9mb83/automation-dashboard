@@ -330,7 +330,8 @@ function Home({ view, data, go }) {
   );
 }
 
-const digits = (p) => String(p || '').replace(/\D/g, '');
+// 10-digit numbers in the sheet are Indian numbers without the country code
+const digits = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.length === 10 ? '91' + d : d; };
 // full numbers only arrive for WhatsApp replies; masked ones ("9198****233") cannot be dialled
 const canDial = (p) => !String(p || '').includes('*') && digits(p).length >= 10;
 function prettyPhone(p) {
@@ -403,7 +404,8 @@ function WhatsAppView({ view, data, range, loading }) {
           <div className="tablewrap">{view.waFailList.length ? (
             <table><thead><tr><th>Sent</th><th>Brand</th><th>To</th><th>Reason</th></tr></thead>
               <tbody>{view.waFailList.map((r, i) => (
-                <tr key={i}><td className="num">{when(r.time)}</td><td>{r.brand}</td><td>{r.name || '–'}<div className="muted num" style={{ fontSize: 12 }}>{r.phone}</div></td>
+                <tr key={i}><td className="num">{when(r.time)}</td><td>{r.brand}</td><td>{r.name || '–'}<div className="num" style={{ fontSize: 12 }}>{prettyPhone(r.phone)}</div>
+                  {canDial(r.phone) && <a className="btn-act" style={{ marginTop: 6 }} href={`tel:+${digits(r.phone)}`}>Call</a>}</td>
                   <td>{explainFailure(r.reason) || r.reason}<div className="muted" style={{ fontSize: 12 }}>code {r.reason.split(' ')[0]}</div></td></tr>
               ))}</tbody></table>) : <p className="empty">Nothing failed.</p>}</div>
         </section>
