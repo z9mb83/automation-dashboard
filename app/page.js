@@ -330,12 +330,27 @@ function Home({ view, data, go }) {
   );
 }
 
+const digits = (p) => String(p || '').replace(/\D/g, '');
+// full numbers only arrive for WhatsApp replies; masked ones ("9198****233") cannot be dialled
+const canDial = (p) => !String(p || '').includes('*') && digits(p).length >= 10;
+function prettyPhone(p) {
+  const d = digits(p);
+  if (!canDial(p)) return p || '';
+  return d.length === 12 && d.startsWith('91') ? `+91 ${d.slice(2, 7)} ${d.slice(7)}` : `+${d}`;
+}
+
 function ReplyItem({ r }) {
   return (
     <div className="reply">
       <div className="reply-meta">{r.brand ? <BrandCell code={r.brand} /> : <span className="muted">Unknown number</span>}
-        <span>{r.name || 'No name'}</span><span className="muted num">{r.phone}</span><span className="muted num">{when(r.time)}</span></div>
+        <span>{r.name || 'No name'}</span><span className="num">{prettyPhone(r.phone)}</span><span className="muted num">{when(r.time)}</span></div>
       <blockquote className="msg">{r.message || <span className="muted">[{r.type || 'message'}]</span>}</blockquote>
+      {canDial(r.phone) && (
+        <div className="reply-actions">
+          <a className="btn-act" href={`tel:+${digits(r.phone)}`}>Call</a>
+          <a className="btn-act wa" href={`https://wa.me/${digits(r.phone)}`} target="_blank" rel="noopener noreferrer">Open in WhatsApp</a>
+        </div>
+      )}
     </div>
   );
 }

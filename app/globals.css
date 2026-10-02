@@ -167,3 +167,10 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 .reply-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 12.5px; }
 .msg { margin: 6px 0 0; padding: 8px 12px; background: var(--wash); border-radius: 10px; border-left: 3px solid var(--series-3); white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 560px) { .choice-stats .value { font-size: 22px; } }
+
+.reply-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.btn-act { display: inline-block; padding: 6px 14px; border: 1px solid var(--border, #d9d8d2); border-radius: 999px;
+  font-size: 13px; font-weight: 600; text-decoration: none; color: inherit; background: transparent; min-height: 32px; }
+.btn-act:hover, .btn-act:focus-visible { background: rgba(0,0,0,0.05); }
+.btn-act.wa { border-color: #1baf7a; color: #0f7a54; }
+@media (prefers-color-scheme: dark) { .btn-act:hover { background: rgba(255,255,255,0.08); } .btn-act.wa { color: #5fd3a4; } }
