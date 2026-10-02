@@ -1,21 +1,23 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BRANDS, brandVar } from '../lib/brands';
-import { ChartCard, HBars, Legend, StackedColumns, StageBars, dayLabel, fmt } from '../components/charts';
+import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '../components/charts';
+import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
-const STAGES = [
-  { key: 'toDraft', label: 'New (no draft yet)', color: 'var(--stage-1)' },
-  { key: 'drafts', label: 'Draft to review', color: 'var(--stage-2)' },
-  { key: 'approved', label: 'Approved, waiting', color: 'var(--stage-3)' },
-  { key: 'sentOnly', label: 'Sent', color: 'var(--stage-4)' },
-  { key: 'replied', label: 'Replied', color: 'var(--stage-5)' },
+// Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
+const PIPE_SLICES = [
+  { key: 'replied', label: 'Replied', color: 'var(--good)' },
+  { key: 'sentOnly', label: 'Emailed, no reply yet', color: 'var(--series-1)' },
+  { key: 'approved', label: 'Approved, waiting to send', color: 'var(--stage-1)' },
+  { key: 'drafts', label: 'Draft to review', color: 'var(--warning)' },
+  { key: 'toDraft', label: 'New (no draft yet)', color: 'var(--axis)' },
 ];
 const REFRESH_MS = 60000;
 const WA_STAGES = [
-  { key: 'read', label: 'Read', color: 'var(--stage-5)' },
-  { key: 'delivered', label: 'Delivered, not read yet', color: 'var(--stage-3)' },
-  { key: 'pending', label: 'No delivery report yet', color: 'var(--stage-1)' },
+  { key: 'read', label: 'Read', color: 'var(--good)' },
+  { key: 'delivered', label: 'Delivered, not read yet', color: 'var(--series-1)' },
+  { key: 'pending', label: 'No delivery report yet', color: 'var(--axis)' },
   { key: 'failed', label: 'Not delivered', color: 'var(--critical)' },
 ];
 const sum0 = (days, kind, codes) => days.reduce((s, d) => s + codes.reduce((t, c) => t + ((d[kind] || {})[c] || 0), 0), 0);
@@ -88,7 +90,7 @@ export default function Dashboard() {
     const codes = brand === 'ALL' ? BRANDS.map((b) => b.code) : [brand];
     const series = BRANDS.filter((b) => codes.includes(b.code)).map((b) => ({ key: b.code, label: b.name, color: brandVar(b.code) }));
     const days = data.daily.slice(-range);
-    const sum = (kind) => days.reduce((s, d) => s + codes.reduce((t, c) => t + (d[kind][c] || 0), 0), 0);
+    const sum = (kind) => days.reduce((s, d) => s + codes.reduce((t, c) => t + ((d[kind] || {})[c] || 0), 0), 0);
     const brands = data.brands.filter((b) => codes.includes(b.code));
     const total = (k) => brands.reduce((s, b) => s + (b[k] || 0), 0);
     const sent = sum('mail'), replies = sum('replies');
@@ -114,6 +116,10 @@ export default function Dashboard() {
       waRepliedLeads: total('waReplied'), waSentAll: total('waSent'),
       waTodayMsgs: sum0(data.daily.slice(-1), 'whatsapp', codes), waTodayReplies: sum0(data.daily.slice(-1), 'waReplies', codes),
       mailToday7Replies: sum0(data.daily.slice(-7), 'replies', codes),
+      pipe: { toDraft: total('toDraft'), drafts: total('drafts'), approved: total('approved'),
+        sentOnly: brands.reduce((s, b) => s + Math.max(0, (b.sent || 0) - (b.replied || 0)), 0), replied: total('replied') },
+      waStages: { read: total('waRead'), delivered: Math.max(0, total('waDelivered') - total('waRead')), failed: total('waUndelivered'),
+        pending: brands.reduce((s, b) => s + Math.max(0, (b.waSent || 0) - (b.waDelivered || 0) - (b.waUndelivered || 0)), 0) },
     };
   }, [data, range, brand]);
 
@@ -183,6 +189,7 @@ export default function Dashboard() {
 
           <div className="section">
             <ChartCard title="Emails sent per day" sub={`Last ${range} days, by brand · hover a day for details`}
+              summary={perDaySummary(view.mailDays, view.series, { one: 'email', many: 'emails', verb: 'sent' })}
               legend={view.series.length > 1 ? <Legend items={view.series} /> : null}
               chart={<StackedColumns days={view.mailDays} series={view.series} unit="emails sent" height={240} />}
               table={<DayTable days={view.mailDays} series={view.series} />} />
@@ -190,10 +197,13 @@ export default function Dashboard() {
 
           <div className="grid two section">
             <ChartCard title="Replies per day" sub={`Last ${range} days · from the 10 AM / 6 PM reply check`}
+              summary={perDaySummary(view.replyDays, view.series, { one: 'reply', many: 'replies', verb: 'received' })}
               legend={view.series.length > 1 ? <Legend items={view.series} /> : null}
               chart={<StackedColumns days={view.replyDays} series={view.series} unit="replies" height={200} />}
               table={<DayTable days={view.replyDays} series={view.series} />} />
             <ChartCard title="Emails sent by brand" sub={`Last ${range} days · reply rate in brackets`}
+              summary={brandSummary(view.series.map((s) => ({ label: s.label,
+                sent: view.mailDays.reduce((t, d) => t + (d.values[s.key] || 0), 0), replies: view.replyDays.reduce((t, d) => t + (d.values[s.key] || 0), 0) })))}
               chart={<HBars valueLabel="Emails sent" rows={view.series.map((s) => {
                 const sent = view.mailDays.reduce((t, d) => t + (d.values[s.key] || 0), 0);
                 const rep = view.replyDays.reduce((t, d) => t + (d.values[s.key] || 0), 0);
@@ -203,10 +213,9 @@ export default function Dashboard() {
           </div>
 
           <div className="grid two section">
-            <ChartCard title="Lead pipeline" sub="All leads in each brand tab, by stage"
-              legend={<Legend items={STAGES} />}
-              chart={<StageBars stages={STAGES} rows={view.brands.map((b) => ({ key: b.code, label: BRANDS.find((x) => x.code === b.code)?.name || b.code,
-                values: { toDraft: b.toDraft, drafts: b.drafts, approved: b.approved, sentOnly: Math.max(0, b.sent - b.replied), replied: b.replied } }))} />}
+            <ChartCard title="Lead pipeline" sub={view.brands.length > 1 ? 'Where all leads stand now · per-brand numbers under Show table' : 'Where all leads stand now'}
+              summary={pipelineSummary(view.pipe)}
+              chart={<Donut slices={PIPE_SLICES.map((x) => ({ ...x, value: view.pipe[x.key] || 0 }))} centerLabel="leads" />}
               table={<PipelineTable brands={view.brands} />} />
             <section className="card">
               <h2>Mailboxes today</h2><p className="sub">Sent today against each Gmail account&apos;s daily limit</p>
@@ -381,21 +390,21 @@ function WhatsAppView({ view, data, range, loading }) {
 
       <div className="grid two section">
         <ChartCard title="WhatsApp sent per day" sub={`Last ${range} days, by brand`}
+          summary={perDaySummary(view.waDays, view.series, { one: 'message', many: 'messages', verb: 'sent' })}
           legend={view.series.length > 1 ? <Legend items={view.series} /> : null}
           chart={<StackedColumns days={view.waDays} series={view.series} unit="messages sent" height={200} />}
           table={<DayTable days={view.waDays} series={view.series} />} />
         <ChartCard title="WhatsApp replies per day" sub={`Last ${range} days, by brand`}
+          summary={perDaySummary(view.waReplyDays, view.series, { one: 'reply', many: 'replies', verb: 'received' })}
           legend={view.series.length > 1 ? <Legend items={view.series} /> : null}
           chart={<StackedColumns days={view.waReplyDays} series={view.series} unit="replies" height={200} />}
           table={<DayTable days={view.waReplyDays} series={view.series} />} />
       </div>
 
       <div className="grid two section">
-        <ChartCard title="Delivery by brand" sub="Every message sent from the sheet · delivery reports exist since 29 Sep"
-          legend={<Legend items={WA_STAGES} />}
-          chart={<StageBars stages={WA_STAGES} rows={view.brands.map((b) => ({ key: b.code, label: BRANDS.find((x) => x.code === b.code)?.name || b.code,
-            values: { read: b.waRead || 0, delivered: Math.max(0, (b.waDelivered || 0) - (b.waRead || 0)), failed: b.waUndelivered || 0,
-              pending: Math.max(0, (b.waSent || 0) - (b.waDelivered || 0) - (b.waUndelivered || 0)) } }))} />}
+        <ChartCard title="What happened to the messages" sub={view.brands.length > 1 ? 'All messages sent from the sheet so far · per-brand numbers under Show table' : 'All messages sent from the sheet so far'}
+          summary={deliverySummary(view.waStages)}
+          chart={<Donut slices={WA_STAGES.map((x) => ({ ...x, value: view.waStages[x.key] || 0 }))} centerLabel="messages" />}
           table={<table><thead><tr><th>Brand</th><th className="r">Sent</th><th className="r">Delivered</th><th className="r">Read</th><th className="r">Not delivered</th><th className="r">Replied</th></tr></thead>
             <tbody>{view.brands.map((b) => <tr key={b.code}><td><BrandCell code={b.code} /></td><td className="r">{b.waSent || 0}</td><td className="r">{b.waDelivered || 0}</td>
               <td className="r">{b.waRead || 0}</td><td className="r">{b.waUndelivered || 0}</td><td className="r">{b.waReplied || 0}</td></tr>)}</tbody></table>} />
@@ -422,7 +431,7 @@ function WhatsAppView({ view, data, range, loading }) {
               ))}</tbody></table>) : <p className="empty">No WhatsApp messages yet.</p>}</div>
         </section>
       </div>
-      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (WhatsApp Log, WhatsApp Replies, brand tabs). Phone numbers are partly hidden. Times are India time.</p>
+      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (WhatsApp Log, WhatsApp Replies, brand tabs). Full numbers are shown only for people who replied or whose message did not arrive. Times are India time.</p>
     </div>
   );
 }
