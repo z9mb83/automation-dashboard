@@ -55,6 +55,13 @@ export default function Dashboard() {
   const [range, setRange] = useState(7);
   const [brand, setBrand] = useState('ALL');
   const [page, setPage] = useState('home');
+  const [manual, setManual] = useState(false);  // dim the page only for a refresh the viewer asked for
+  const [theme, setTheme] = useState('light');
+  useEffect(() => { setTheme(document.documentElement.getAttribute('data-theme') || 'light'); }, []);
+  const pickTheme = (t) => {
+    setTheme(t); document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('theme', t); } catch (e) { /* private mode: still works for this visit */ }
+  };
 
   useEffect(() => {
     const read = () => { const h = window.location.hash.replace('#', ''); setPage(h === 'mail' || h === 'whatsapp' ? h : 'home'); };
@@ -74,7 +81,7 @@ export default function Dashboard() {
       setData(json); setError('');
     } catch (e) {
       setError(String(e.message || e));
-    } finally { setLoading(false); }
+    } finally { setLoading(false); setManual(false); }
   }, []);
 
   useEffect(() => {
@@ -139,7 +146,11 @@ export default function Dashboard() {
           <div className="status-line" aria-live="polite">
             <span><i className={'dot-live' + (error || ageMin > 10 ? ' dot-stale' : '')} /> {data ? `Updated ${updated.slice(11)} India time` : 'Loading…'}</span>
             <span>Refreshes every minute</span>
-            <button className="linkbtn" onClick={load}>Refresh now</button>
+            <button className="linkbtn" onClick={() => { setManual(true); load(); }}>{loading ? 'Updating…' : 'Refresh now'}</button>
+            <span className="theme-switch" role="group" aria-label="Colour theme">
+              <button aria-pressed={theme === 'light'} onClick={() => pickTheme('light')}>Light</button>
+              <button aria-pressed={theme === 'dark'} onClick={() => pickTheme('dark')}>Dark</button>
+            </span>
             <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">Sign out</button></form>
           </div>
         </div>
@@ -175,9 +186,9 @@ export default function Dashboard() {
       ) : null}
 
       {view && page === 'home' ? <Home view={view} data={data} go={go} /> : null}
-      {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading} /> : null}
+      {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
-        <div className={loading && data ? 'stale' : ''}>
+        <div className={loading && manual ? 'stale' : ''}>
           <div className="grid kpis">
             <div className="card tile hero"><div className="label">Emails sent today</div><div className="value">{fmt(view.today)}</div>
               <div className="note">{view.failedToday ? `${view.failedToday} failed today` : 'No failures today'}</div></div>
