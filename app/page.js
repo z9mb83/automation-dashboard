@@ -112,6 +112,7 @@ export default function Dashboard() {
       waReplies: sum('waReplies'),
       waReplyList: (data.recentWaReplies || []).filter((r) => (r.brand ? codes.includes(r.brand) : brand === 'ALL')),
       waFailList: (data.waFailures || []).filter((r) => codes.includes(r.brand)),
+      waReadList: (data.waReadNoReply || []).filter((r) => codes.includes(r.brand)),
       waDelivered: total('waDelivered'), waRead: total('waRead'), waUndelivered: total('waUndelivered'),
       waRepliedLeads: total('waReplied'), waSentAll: total('waSent'),
       waTodayMsgs: sum0(data.daily.slice(-1), 'whatsapp', codes), waTodayReplies: sum0(data.daily.slice(-1), 'waReplies', codes),
@@ -388,6 +389,22 @@ function WhatsAppView({ view, data, range, loading }) {
         </section>
       </div>
 
+      <div className="section">
+        <section className="card">
+          <h2>Read, no reply yet: worth a follow-up call</h2>
+          <p className="sub">They opened your WhatsApp message (blue ticks) but have not answered. Oldest first. People who reply or opt out leave this list.</p>
+          <div className="tablewrap">{view.waReadList.length ? (
+            <table><thead><tr><th>Sent</th><th>Brand</th><th>Name</th><th>Number</th><th></th></tr></thead>
+              <tbody>{view.waReadList.map((r, i) => (
+                <tr key={i}><td className="num">{when(r.time)}</td><td><BrandCell code={r.brand} /></td><td>{r.name || '–'}</td>
+                  <td className="num">{prettyPhone(r.phone)}</td>
+                  <td>{canDial(r.phone) && <div className="reply-actions" style={{ marginTop: 0 }}>
+                    <a className="btn-act" href={`tel:+${digits(r.phone)}`}>Call</a>
+                    <a className="btn-act wa" href={`https://wa.me/${digits(r.phone)}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></div>}</td></tr>
+              ))}</tbody></table>) : <p className="empty">Nobody is waiting: everyone who read a message has replied, or no one has read one yet.</p>}</div>
+        </section>
+      </div>
+
       <div className="grid two section">
         <ChartCard title="WhatsApp sent per day" sub={`Last ${range} days, by brand`}
           summary={perDaySummary(view.waDays, view.series, { one: 'message', many: 'messages', verb: 'sent' })}
@@ -431,7 +448,7 @@ function WhatsAppView({ view, data, range, loading }) {
               ))}</tbody></table>) : <p className="empty">No WhatsApp messages yet.</p>}</div>
         </section>
       </div>
-      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (WhatsApp Log, WhatsApp Replies, brand tabs). Full numbers are shown only for people who replied or whose message did not arrive. Times are India time.</p>
+      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (WhatsApp Log, WhatsApp Replies, brand tabs). Full numbers are shown only for people who replied, read without replying, or whose message did not arrive. Times are India time.</p>
     </div>
   );
 }
