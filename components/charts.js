@@ -192,8 +192,54 @@ export function StageBars({ rows, stages }) {
   );
 }
 
-/** Card with a chart and its table-view twin (the table is always one click away). */
-export function ChartCard({ title, sub, legend, chart, table }) {
+/** Arc path for a donut slice from angle a0 to a1 (radians, 0 = 12 o'clock). */
+function arc(cx, cy, r0, r1, a0, a1) {
+  const p = (r, a) => `${cx + r * Math.sin(a)},${cy - r * Math.cos(a)}`;
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  return `M${p(r1, a0)}A${r1},${r1} 0 ${large} 1 ${p(r1, a1)}L${p(r0, a1)}A${r0},${r0} 0 ${large} 0 ${p(r0, a0)}Z`;
+}
+
+/** Donut: parts of one whole. slices: [{key,label,color,value}]. Legend lists every part with count and %. */
+export function Donut({ slices, centerLabel = 'total', size = 168 }) {
+  const [hover, setHover] = useState(null);
+  const total = slices.reduce((s, x) => s + (x.value || 0), 0);
+  const cx = size / 2, cy = size / 2, r1 = size / 2 - 2, r0 = r1 * 0.62, gap = 0.012;
+  let a = 0;
+  const shown = slices.filter((x) => x.value > 0);
+  const pctOf = (v) => (total ? Math.round((v / total) * 100) : 0);
+  const pctLabel = (v) => (v > 0 && pctOf(v) === 0 ? '<1%' : `${pctOf(v)}%`);
+  const active = hover ? slices.find((x) => x.key === hover) : null;
+  return (
+    <div className="donut">
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} role="img"
+        aria-label={slices.map((x) => `${x.label}: ${x.value} (${pctOf(x.value)}%)`).join('; ')}>
+        {total === 0 ? <circle cx={cx} cy={cy} r={(r0 + r1) / 2} fill="none" stroke="var(--grid)" strokeWidth={r1 - r0} />
+          : shown.length === 1 ? <circle cx={cx} cy={cy} r={(r0 + r1) / 2} fill="none" stroke={shown[0].color} strokeWidth={r1 - r0} />
+          : shown.map((x) => {
+            const a0 = a, a1 = a + (x.value / total) * Math.PI * 2; a = a1;
+            return <path key={x.key} d={arc(cx, cy, r0, r1, a0 + gap, a1 - gap)} fill={x.color}
+              opacity={hover && hover !== x.key ? 0.35 : 1} onMouseEnter={() => setHover(x.key)} onMouseLeave={() => setHover(null)} />;
+          })}
+        <text x={cx} y={cy + 2} textAnchor="middle" className="donut-num">{fmt(active ? active.value : total)}</text>
+        <text x={cx} y={cy + 20} textAnchor="middle" className="donut-lbl">{active ? pctLabel(active.value) : centerLabel}</text>
+      </svg>
+      <ul className="donut-legend">
+        {slices.map((x) => (
+          <li key={x.key} onMouseEnter={() => setHover(x.key)} onMouseLeave={() => setHover(null)} className={hover === x.key ? 'on' : ''}>
+            <i className="swatch" style={{ background: x.color }} />
+            <span className="lbl">{x.label}</span>
+            <b className="num">{fmt(x.value)}</b>
+            <span className="pct num">{pctLabel(x.value)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Card with a chart and its table-view twin (the table is always one click away).
+ *  summary: one plain sentence with the main point, shown above the chart and the table. */
+export function ChartCard({ title, sub, summary, legend, chart, table }) {
   const [on, setOn] = useState(false);
   return (
     <section className="card">
@@ -201,6 +247,7 @@ export function ChartCard({ title, sub, legend, chart, table }) {
         <div><h2>{title}</h2>{sub ? <p className="sub">{sub}</p> : null}</div>
         {table ? <button className="linkbtn" onClick={() => setOn(!on)} aria-pressed={on}>{on ? 'Show chart' : 'Show table'}</button> : null}
       </div>
+      {summary ? <p className="takeaway">{summary}</p> : null}
       {on ? <div className="tablewrap">{table}</div> : <>{legend}{chart}</>}
     </section>
   );
