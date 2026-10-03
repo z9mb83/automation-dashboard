@@ -251,13 +251,22 @@ export default function Dashboard() {
 
           <div className="grid two section">
             <section className="card">
-              <h2>Latest replies</h2><p className="sub">Leads who replied to our emails (newest first)</p>
+              <h2>Latest replies</h2><p className="sub">Leads who replied to our emails (newest first). Reply from the mailbox that sent the email, so the conversation stays in one thread.</p>
               <div className="tablewrap">{view.replyList.length ? (
-                <table><thead><tr><th>Brand</th><th>Name / email</th><th>Phone</th><th>Replied</th></tr></thead>
-                  <tbody>{view.replyList.map((r) => (
-                    <tr key={r.brand + r.email + r.time}><td><BrandCell code={r.brand} /></td>
-                      <td>{r.name}<div className="muted">{r.email}</div></td><td>{r.phone || '–'}</td><td className="num">{r.time ? dayLabel(r.time.slice(0, 10)) + ', ' + r.time.slice(11) : '–'}</td></tr>
-                  ))}</tbody></table>) : <p className="empty">No replies yet.</p>}</div>
+                <div>{view.replyList.map((r) => (
+                  <div className="reply" key={r.brand + r.email + r.time}>
+                    <div className="reply-meta"><BrandCell code={r.brand} /><span>{r.name || 'No name'}</span>
+                      <span className="muted">{r.email}</span>{r.phone ? <span className="muted num">{r.phone}</span> : null}
+                      <span className="muted num">{r.time ? dayLabel(r.time.slice(0, 10)) + ', ' + r.time.slice(11) : '–'}</span></div>
+                    <div className="sent-from">{r.from
+                      ? <>Sent from <b>{r.from}</b>{r.subject ? <> · &ldquo;{r.subject}&rdquo;</> : null}</>
+                      : <span className="muted">Sending mailbox not recorded</span>}</div>
+                    {r.from ? <div className="reply-actions">
+                      <a className="btn-act" target="_blank" rel="noopener noreferrer"
+                        href={`https://mail.google.com/mail/u/${encodeURIComponent(r.from)}/#search/${encodeURIComponent('from:' + r.email)}`}>Open in Gmail</a>
+                    </div> : null}
+                  </div>
+                ))}</div>) : <p className="empty">No replies yet.</p>}</div>
             </section>
             <section className="card">
               <h2>Latest emails</h2><p className="sub">Most recent send attempts</p>
