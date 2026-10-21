@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BRANDS, brandVar } from '../lib/brands';
 import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '../components/charts';
 import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
+import { ReportCard } from '../components/report';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -284,6 +285,7 @@ export default function Dashboard() {
           <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (read-only). Times are India time.</p>
         </div>
       ) : null}
+      {view ? <ReportCard defaultType={page === 'home' ? 'combined' : page} defaultBrand={page === 'home' ? 'ALL' : brand} /> : null}
       {!view && !error ? <p className="muted">Loading…</p> : null}
     </div>
   );
