@@ -4,6 +4,7 @@ import { BRANDS, brandVar } from '../lib/brands';
 import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '../components/charts';
 import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
 import { ReportCard } from '../components/report';
+import { InboxButton } from '../components/inbox-button';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -152,10 +153,10 @@ export default function Dashboard() {
               <button aria-pressed={theme === 'light'} onClick={() => pickTheme('light')}>Light</button>
               <button aria-pressed={theme === 'dark'} onClick={() => pickTheme('dark')}>Dark</button>
             </span>
-            <a className="linkbtn" href="/inbox">WhatsApp inbox</a>
             <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">Sign out</button></form>
           </div>
         </div>
+        <InboxButton />
       </header>
 
       {data?.sample ? <div className="banner">Showing <b>sample data</b>: the sheet feed is not connected yet (set SHEET_API_URL and SHEET_API_KEY on Vercel).</div> : null}
