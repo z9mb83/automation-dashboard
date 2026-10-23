@@ -11,7 +11,7 @@ const explainFailure = (e) => /131049/.test(e) ? 'Meta limited marketing message
   : /131026/.test(e) ? 'This number cannot receive WhatsApp' : /131047/.test(e) ? 'Over 24 hours since their last message: only templates allowed' : '';
 const loadSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || 'null'); } catch (e) { return null; } };
 const saveSeen = (m) => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch (e) { /* private mode */ } };
-const initials = (c) => (c.name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '#';
+const initials = (c) => (c.name || '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '#';
 
 export default function Inbox() {
   const [data, setData] = useState(null);
