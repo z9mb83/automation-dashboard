@@ -152,6 +152,7 @@ export default function Dashboard() {
               <button aria-pressed={theme === 'light'} onClick={() => pickTheme('light')}>Light</button>
               <button aria-pressed={theme === 'dark'} onClick={() => pickTheme('dark')}>Dark</button>
             </span>
+            <a className="linkbtn" href="/inbox">WhatsApp inbox</a>
             <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">Sign out</button></form>
           </div>
         </div>
@@ -350,6 +351,12 @@ function Home({ view, data, go }) {
           </div>
           <p className="sub">Replies with their messages, delivery and read status, failures with reasons</p>
         </button>
+      </div>
+      <div className="grid two" style={{ marginTop: 14 }}>
+        <a className="card choice" href="/inbox" aria-label="Open the WhatsApp inbox" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="choice-head"><ChatIcon /><h2>WhatsApp inbox</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
+          <p className="sub">Every conversation like in WhatsApp: the message we sent, each reply as it arrives, Call and Open in WhatsApp, add a new contact and send.</p>
+        </a>
       </div>
       {attention.length ? <div className="banner" style={{ marginTop: 14 }}>Needs attention: {attention.join(' · ')}</div> : null}
       {view.waReplyList.length ? (
