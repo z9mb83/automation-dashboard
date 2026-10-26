@@ -1,14 +1,14 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BRANDS, brandVar } from '../../lib/brands';
-import { FILTERS, chatFacts, dayLabel, filterChats, listTime, newContactBody, prettyPhone, telLink, threadItems, waLink } from '../../lib/inbox';
+import { FILTERS, chatFacts, dayLabel, filterChats, istStamp, listTime, needsReply, newContactBody, prettyPhone, replyQueue, replyWindow, telLink, threadItems, waLink } from '../../lib/inbox';
 
 const POLL_VISIBLE_MS = 5000, POLL_HIDDEN_MS = 30000;
-const SEEN_KEY = 'inbox-seen';
+const SEEN_KEY = 'inbox-seen', NAME_KEY = 'inbox-name';
 const brandName = (code) => (BRANDS.find((b) => b.code === code) || {}).name || 'Unknown brand';
 const indiaToday = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
 const explainFailure = (e) => /131049/.test(e) ? 'Meta limited marketing messages to this person (try again later)'
-  : /131026/.test(e) ? 'This number cannot receive WhatsApp' : /131047/.test(e) ? 'Over 24 hours since their last message: only templates allowed' : '';
+  : /131026/.test(e) ? 'This number cannot receive WhatsApp' : /131047|window is closed/i.test(e) ? 'Reply window closed: over 24 hours since their last message' : '';
 const loadSeen = () => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || 'null'); } catch (e) { return null; } };
 const saveSeen = (m) => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch (e) { /* private mode */ } };
 const initials = (c) => (c.name || '').replace(/[^\p{L}\p{N}\s]/gu, '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '#';
@@ -23,7 +23,10 @@ export default function Inbox() {
   const [seen, setSeen] = useState({});
   const [adding, setAdding] = useState(false);
   const [toast, setToast] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+  const [pending, setPending] = useState([]);   // typed replies on their way (shown at once, replaced by the sheet's copy)
   const version = useRef('');
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, []);
   const today = indiaToday();
 
   const loadAll = useCallback(async () => {
@@ -64,8 +67,10 @@ export default function Inbox() {
     return () => { stop = true; clearTimeout(timer); document.removeEventListener('visibilitychange', vis); };
   }, [loadAll]);
 
-  const chats = data ? data.chats : [], messages = data ? data.messages : [];
-  const list = useMemo(() => filterChats(chats, messages, { q, brand, filter, lastSeen: seen }), [chats, messages, q, brand, filter, seen]);
+  const chats = data ? data.chats : [];
+  const messages = useMemo(() => (data ? data.messages : []).concat(pending), [data, pending]);
+  const list = useMemo(() => filterChats(chats, messages, { q, brand, filter, lastSeen: seen, nowMs: now }), [chats, messages, q, brand, filter, seen, now]);
+  const needsCount = useMemo(() => replyQueue(chats, messages, now).length, [chats, messages, now]);
   const open = chats.find((c) => c.id === openId) || null;
   const unreadTotal = useMemo(() => chats.reduce((s, c) => s + chatFacts(c, messages, seen).unread, 0), [chats, messages, seen]);
 
@@ -86,6 +91,15 @@ export default function Inbox() {
   };
   const say = (m) => { setToast(m); setTimeout(() => setToast(''), 6000); };
 
+  // typed reply: shown straight away, then replaced by the copy in the sheet (with real ticks)
+  const reply = async (chat, text, by) => {
+    const tmp = { id: 'p' + Date.now(), chat: chat.id, dir: 'out', kind: 'reply', by, text, time: istStamp(Date.now()), status: 'pending' };
+    setPending((p) => p.concat(tmp));
+    const out = await act({ action: 'reply', brand: chat.brand, phone: chat.phone, text, by });
+    setPending((p) => p.filter((m) => m.id !== tmp.id));
+    return out;
+  };
+
   const warnings = (data?.quality || []).filter((x) => x.quality === 'YELLOW' || x.quality === 'RED');
 
   return (
@@ -100,7 +114,8 @@ export default function Inbox() {
           <input type="search" placeholder="Search number or name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search chats" />
         </div>
         <div className="wa-filters" role="group" aria-label="Filter chats">
-          {FILTERS.map((f) => <button key={f.key} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>{f.label}{f.key === 'unread' && unreadTotal ? ` ${unreadTotal}` : ''}</button>)}
+          {FILTERS.map((f) => <button key={f.key} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>{f.label}
+            {f.key === 'unread' && unreadTotal ? ` ${unreadTotal}` : ''}{f.key === 'needs' && needsCount ? ` ${needsCount}` : ''}</button>)}
           <select value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Brand">
             <option value="ALL">All brands</option>
             {BRANDS.map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
@@ -115,7 +130,7 @@ export default function Inbox() {
           {!data && !error ? <li className="wa-empty">Loading…</li> : null}
           {data && !list.length ? <li className="wa-empty">{q ? 'No chat matches “' + q + '”.' : 'No chats here.'}</li> : null}
           {list.map((c) => {
-            const f = chatFacts(c, messages, seen);
+            const f = chatFacts(c, messages, seen), w = needsReply(c, messages, now) ? replyWindow(c, messages, now) : null;
             return (
               <li key={c.id}>
                 <button className={'wa-row' + (c.id === openId ? ' active' : '')} onClick={() => setOpenId(c.id)}>
@@ -136,6 +151,7 @@ export default function Inbox() {
                       <span className="wa-tag" style={{ borderColor: brandVar(c.brand) }}>{c.brand || '?'}</span>
                       {c.name ? <span className="wa-row-num">{prettyPhone(c.phone)}</span> : null}
                       {c.flag ? <span className={'wa-flag ' + (c.flag === 'Opted out' ? 'bad' : 'warn')}>{c.flag}</span> : null}
+                      {w ? <span className={'wa-timer ' + w.level} title={w.label}>Reply · {w.short}</span> : null}
                     </span>
                   </span>
                 </button>
@@ -146,7 +162,7 @@ export default function Inbox() {
       </aside>
 
       <main className="wa-chat" aria-label="Conversation">
-        {open ? <Thread chat={open} messages={messages} today={today} onBack={() => setOpenId('')} act={act} say={say} live={data?.live} />
+        {open ? <Thread chat={open} messages={messages} today={today} now={now} onBack={() => setOpenId('')} act={act} say={say} live={data?.live} reply={reply} />
           : <div className="wa-placeholder"><div><h2>WhatsApp inbox</h2><p>Select a chat to see the message we sent and every reply.<br />New replies appear here within a few seconds.</p></div></div>}
       </main>
 
@@ -158,6 +174,8 @@ export default function Inbox() {
 }
 
 function Ticks({ status }) {
+  if (status === 'pending') return <span className="wa-ticks" title="Sending" aria-label="Sending">
+    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M8 4.5V8l2.2 1.6" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg></span>;
   if (status === 'failed') return <span className="wa-ticks failed" title="Not delivered" aria-label="Not delivered">!</span>;
   const double = status === 'delivered' || status === 'read';
   const label = status === 'read' ? 'Read' : status === 'delivered' ? 'Delivered' : 'Sent';
@@ -171,7 +189,8 @@ function Ticks({ status }) {
   );
 }
 
-function Thread({ chat, messages, today, onBack, act, say, live }) {
+function Thread({ chat, messages, today, now, onBack, act, say, live, reply }) {
+  const win = replyWindow(chat, messages, now);
   const items = useMemo(() => threadItems(messages, chat.id), [messages, chat.id]);
   const end = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -198,6 +217,8 @@ function Thread({ chat, messages, today, onBack, act, say, live }) {
           <div className="wa-chat-sub">{prettyPhone(chat.phone)} · {brandName(chat.brand)}{chat.row ? ` · row ${chat.row}` : ''}{chat.email ? ` · ${chat.email}` : ''}</div>
         </div>
         <div className="wa-chat-actions">
+          {win.level !== 'never' ? <span className={'wa-window ' + win.level} title="WhatsApp allows typed messages only within 24 hours of the customer's last message">
+            {win.open ? win.label : 'Reply window closed'}</span> : null}
           <a className="wa-btn" href={telLink(chat.phone)}>Call</a>
           <a className="wa-btn green" href={waLink(chat.phone)} target="_blank" rel="noopener noreferrer">Open in WhatsApp</a>
         </div>
@@ -210,6 +231,7 @@ function Thread({ chat, messages, today, onBack, act, say, live }) {
         {items.map((m) => m.day ? <div key={'d' + m.day} className="wa-day"><span>{dayLabel(m.day, today)}</span></div> : (
           <div key={m.id} className={'wa-msg ' + m.dir + (m.status === 'failed' ? ' failed' : '')}>
             {m.dir === 'out' && (m.template || m.auto) ? <div className="wa-msg-label">{m.auto ? 'Automatic reply' : 'Template · ' + m.template}</div> : null}
+            {m.dir === 'out' && m.kind === 'reply' && m.by ? <div className="wa-msg-label">{m.by}</div> : null}
             <div className="wa-msg-text">{m.text}</div>
             <div className="wa-msg-meta">
               {m.flag ? <span className={'wa-flag ' + (m.flag === 'Opted out' ? 'bad' : 'warn')}>{m.flag}</span> : null}
@@ -221,12 +243,18 @@ function Thread({ chat, messages, today, onBack, act, say, live }) {
         ))}
         <div ref={end} />
       </div>
-      <footer className="wa-foot">
-        {canSend ? <button className="wa-btn green" disabled={busy} onClick={send}>{busy ? 'Sending…' : 'Send template now'}</button> : null}
-        <span>Type replies in WhatsApp: <a href={waLink(chat.phone)} target="_blank" rel="noopener noreferrer">open this chat</a>.</span>
+      {win.open && !chat.optedOut && chat.flag !== 'Opted out'
+        ? <Composer key={chat.id} chat={chat} win={win} reply={reply} say={say} />
+        : <footer className="wa-foot">
+          {chat.optedOut || chat.flag === 'Opted out' ? <span>Opted out: no messages can be sent.</span>
+            : win.level === 'closed' ? <span><b>Reply window closed.</b> WhatsApp allows typed messages only within 24 hours of their last message. They can still be reached by <a href={telLink(chat.phone)}>Call</a> or <a href={waLink(chat.phone)} target="_blank" rel="noopener noreferrer">WhatsApp</a>; the box opens again when they write.</span>
+            : <span>You can type here once they reply.</span>}
+          {canSend ? <button className="wa-btn green" disabled={busy} onClick={send}>{busy ? 'Sending…' : 'Send template now'}</button> : null}
+        </footer>}
+      <div className="wa-foot-links">
         {!chat.optedOut && !chat.flag ? <button className="linkbtn" disabled={busy} onClick={optOut}>Mark as opted out</button> : null}
-        {!live ? <span className="muted">Test mode is on.</span> : null}
-      </footer>
+        {!live ? <span className="muted">Test mode is on: only test numbers receive messages.</span> : null}
+      </div>
     </>
   );
 }
@@ -279,5 +307,49 @@ function NewContact({ data, onClose, onDone, act }) {
         </div>
       </form>
     </div>
+  );
+}
+
+function Composer({ chat, win, reply, say }) {
+  const [text, setText] = useState('');
+  const [name, setName] = useState('');
+  const [editName, setEditName] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [err, setErr] = useState('');
+  const box = useRef(null);
+  useEffect(() => { try { const n = localStorage.getItem(NAME_KEY) || ''; setName(n); setEditName(!n); } catch (e) { setEditName(true); } }, []);
+  useEffect(() => { const el = box.current; if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; } }, [text]);
+  const saveName = (v) => { setName(v); try { localStorage.setItem(NAME_KEY, v.trim()); } catch (e) { /* ignore */ } };
+
+  const send = async () => {
+    const body = text.trim();
+    if (!body || sending) return;
+    if (!name.trim()) { setEditName(true); setErr('Add your name first, so the team can see who replied.'); return; }
+    setSending(true); setErr(''); setText('');
+    const out = await reply(chat, body, name.trim());
+    setSending(false);
+    if (!out || !out.ok) { setText(body); setErr((out && out.message) || 'Not sent.'); }
+    box.current?.focus();
+  };
+
+  return (
+    <footer className="wa-compose">
+      <div className="wa-compose-who">
+        {editName
+          ? <label>Your name <input value={name} onChange={(e) => saveName(e.target.value)} onBlur={() => name.trim() && setEditName(false)} placeholder="e.g. Rohit" maxLength={40} /></label>
+          : <span>Replying as <b>{name}</b> <button className="linkbtn" onClick={() => setEditName(true)}>change</button></span>}
+        <span className={'wa-window small ' + win.level}>{win.label}</span>
+      </div>
+      {err ? <div className="wa-err" role="alert">{err}</div> : null}
+      <div className="wa-compose-row">
+        <textarea ref={box} rows={1} value={text} placeholder="Type a message" aria-label="Message"
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} maxLength={4096} />
+        <button className="wa-send" onClick={send} disabled={!text.trim() || sending} aria-label="Send">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.1 6.5L15 12 3.3 13.9z" fill="currentColor" /></svg>
+        </button>
+      </div>
+      <div className="wa-compose-hint">Enter to send · Shift + Enter for a new line{text.length > 3500 ? ` · ${4096 - text.length} characters left` : ''}</div>
+    </footer>
   );
 }
