@@ -66,3 +66,30 @@ test('sample inbox has the feed shape', () => {
   assert.ok(s.chats.length >= 5 && s.messages.length >= 6);
   for (const c of s.chats) assert.ok(s.messages.some((m) => m.chat === c.id), c.id);
 });
+
+import { replyWindow, needsReply, replyQueue, istMs, istStamp } from '../lib/inbox.js';
+
+test('24-hour reply window: countdown levels and the Needs reply queue', () => {
+  const now = istMs('2026-10-26 17:30:00');
+  assert.equal(istStamp(now), '2026-10-26 17:30:00');
+  const ch = (id, lastInTime, extra = {}) => ({ id, brand: 'SB', phone: '91' + id.padStart(10, '0'), name: id, lastInTime, flag: '', optedOut: false, ...extra });
+  const chats = [ch('1', '2026-10-26 13:31:00'), ch('2', '2026-10-25 18:00:00'), ch('3', '2026-10-25 17:45:00'), ch('4', '2026-10-24 21:05:00'), ch('5', ''), ch('6', '2026-10-26 16:00:00', { optedOut: true, flag: 'Opted out' })];
+  const msgs = [
+    { chat: '1', dir: 'in', time: '2026-10-26 13:31:00' },
+    { chat: '2', dir: 'out', time: '2026-10-25 10:00:00', status: 'read' }, { chat: '2', dir: 'in', time: '2026-10-25 18:00:00' },
+    { chat: '3', dir: 'in', time: '2026-10-25 17:45:00' }, { chat: '3', dir: 'out', time: '2026-10-25 17:50:00', status: 'sent', kind: 'reply' },
+    { chat: '4', dir: 'in', time: '2026-10-24 21:05:00' },
+    { chat: '6', dir: 'in', time: '2026-10-26 16:00:00' }];
+  const w = (id) => replyWindow(chats.find((c) => c.id === id), msgs, now);
+  assert.deepEqual([w('1').level, w('1').label], ['ok', '20 h 01 m left to reply']);
+  assert.equal(w('2').level, 'urgent');                     // 18:00 yesterday -> 30 minutes left
+  assert.equal(w('2').short, '30m left');
+  assert.equal(w('3').level, 'urgent');
+  assert.deepEqual([w('4').open, w('4').level], [false, 'closed']);
+  assert.equal(w('5').level, 'never');
+  assert.equal(replyWindow(ch('8', '2026-10-25 19:30:00'), [], now).level, 'soon');   // 2 h left
+  assert.ok(needsReply(chats[0], msgs, now));
+  assert.ok(!needsReply(chats[2], msgs, now));              // we already answered after their message
+  assert.ok(!needsReply(chats[5], msgs, now));              // opted out
+  assert.deepEqual(replyQueue(chats, msgs, now).map((c) => c.id), ['2', '1']);   // least time left first
+});

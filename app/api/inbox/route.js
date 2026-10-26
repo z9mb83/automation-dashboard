@@ -29,12 +29,12 @@ export async function GET(req) {
   }
 }
 
-// POST /api/inbox  { action: 'add' | 'send' | 'optout', ...fields }
+// POST /api/inbox  { action: 'add' | 'send' | 'optout' | 'reply', ...fields }
 export async function POST(req) {
   let body;
   try { body = await req.json(); } catch { return json({ ok: false, message: 'Bad request.' }, 400); }
   const action = String(body.action || '');
-  if (!['add', 'send', 'optout'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
+  if (!['add', 'send', 'optout', 'reply'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
   const { base, key } = feed();
   if (!base || !key) return json({ ok: false, message: 'Sample mode: the sheet feed is not connected, nothing was saved or sent.' });
   try {
