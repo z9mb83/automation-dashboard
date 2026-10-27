@@ -133,6 +133,14 @@ export default function Dashboard() {
     };
   }, [data, range, brand]);
 
+  // phone layout: list tables become cards; each cell gets its column heading as a label
+  useEffect(() => {
+    document.querySelectorAll('table.stack').forEach((t) => {
+      const heads = [...t.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+      t.querySelectorAll('tbody tr').forEach((tr) => [...tr.children].forEach((td, i) => td.setAttribute('data-label', heads[i] || '')));
+    });
+  });
+
   const updated = data ? data.generatedAt : '';
   const ageMin = useMemo(() => {
     if (!updated) return 0;
@@ -234,7 +242,7 @@ export default function Dashboard() {
               table={<PipelineTable brands={view.brands} />} />
             <section className="card">
               <h2>Mailboxes today</h2><p className="sub">Sent today against each Gmail account&apos;s daily limit</p>
-              <div className="tablewrap"><table>
+              <div className="tablewrap"><table className="stack">
                 <thead><tr><th>Mailbox</th><th>Brand</th><th style={{ width: '28%' }}>Today</th><th>Status</th></tr></thead>
                 <tbody>{view.mailboxes.map((m) => {
                   const st = mailboxStatus(m), pct = m.dailyLimit ? Math.min(100, (m.sentToday / m.dailyLimit) * 100) : 0;
@@ -274,7 +282,7 @@ export default function Dashboard() {
             <section className="card">
               <h2>Latest emails</h2><p className="sub">Most recent send attempts</p>
               <div className="tablewrap">{view.sendList.length ? (
-                <table><thead><tr><th>Time</th><th>Brand</th><th>To</th><th>Result</th></tr></thead>
+                <table className="stack"><thead><tr><th>Time</th><th>Brand</th><th>To</th><th>Result</th></tr></thead>
                   <tbody>{view.sendList.map((r, i) => (
                     <tr key={i}><td className="num">{dayLabel(r.time.slice(0, 10))}, {r.time.slice(11)}</td><td>{r.brand}</td>
                       <td>{r.to}<div className="muted" style={{ fontSize: 12 }}>from {r.from.replace('@gmail.com', '')}</div></td>
@@ -424,7 +432,7 @@ function WhatsAppView({ view, data, range, loading }) {
           <h2>Read, no reply yet: worth a follow-up call</h2>
           <p className="sub">They opened your WhatsApp message (blue ticks) but have not answered. Oldest first. People who reply or opt out leave this list.</p>
           <div className="tablewrap">{view.waReadList.length ? (
-            <table><thead><tr><th>Sent</th><th>Brand</th><th>Name</th><th>Number</th><th></th></tr></thead>
+            <table className="stack"><thead><tr><th>Sent</th><th>Brand</th><th>Name</th><th>Number</th><th></th></tr></thead>
               <tbody>{view.waReadList.map((r, i) => (
                 <tr key={i}><td className="num">{when(r.time)}</td><td><BrandCell code={r.brand} /></td><td>{r.name || '–'}</td>
                   <td className="num">{prettyPhone(r.phone)}</td>
@@ -458,7 +466,7 @@ function WhatsAppView({ view, data, range, loading }) {
         <section className="card">
           <h2>Not delivered</h2><p className="sub">Messages Meta accepted but could not deliver, with the reason</p>
           <div className="tablewrap">{view.waFailList.length ? (
-            <table><thead><tr><th>Sent</th><th>Brand</th><th>To</th><th>Reason</th></tr></thead>
+            <table className="stack"><thead><tr><th>Sent</th><th>Brand</th><th>To</th><th>Reason</th></tr></thead>
               <tbody>{view.waFailList.map((r, i) => (
                 <tr key={i}><td className="num">{when(r.time)}</td><td>{r.brand}</td><td>{r.name || '–'}<div className="num" style={{ fontSize: 12 }}>{prettyPhone(r.phone)}</div>
                   {canDial(r.phone) && <a className="btn-act" style={{ marginTop: 6 }} href={`tel:+${digits(r.phone)}`}>Call</a>}</td>
@@ -471,7 +479,7 @@ function WhatsAppView({ view, data, range, loading }) {
         <section className="card">
           <h2>Latest messages sent</h2><p className="sub">Template messages sent from the sheet · &ldquo;Sent&rdquo; means Meta accepted it; see Delivery above</p>
           <div className="tablewrap">{view.waList.length ? (
-            <table><thead><tr><th>Time</th><th>Brand</th><th>Phone</th><th>Template</th><th>Result</th></tr></thead>
+            <table className="stack"><thead><tr><th>Time</th><th>Brand</th><th>Phone</th><th>Template</th><th>Result</th></tr></thead>
               <tbody>{view.waList.map((r, i) => (
                 <tr key={i}><td className="num">{when(r.time)}</td><td>{r.brand}</td><td className="num">{r.phone}</td><td>{r.template}</td>
                   <td>{r.result === 'Sent' ? <span className="pill ok"><Icon kind="ok" />Sent</span> : <span className="pill bad"><Icon kind="bad" />{r.result}</span>}</td></tr>

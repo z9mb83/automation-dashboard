@@ -220,7 +220,7 @@ function Thread({ chat, messages, today, now, onBack, act, say, live, reply }) {
           {win.level !== 'never' ? <span className={'wa-window ' + win.level} title="WhatsApp allows typed messages only within 24 hours of the customer's last message">
             {win.open ? win.label : 'Reply window closed'}</span> : null}
           <a className="wa-btn" href={telLink(chat.phone)}>Call</a>
-          <a className="wa-btn green" href={waLink(chat.phone)} target="_blank" rel="noopener noreferrer">Open in WhatsApp</a>
+          <a className="wa-btn green" href={waLink(chat.phone)} target="_blank" rel="noopener noreferrer"><span className="wa-hide-sm">Open in&nbsp;</span>WhatsApp</a>
         </div>
       </header>
       {chat.flag ? <div className={'wa-banner ' + (chat.flag === 'Opted out' ? 'bad' : 'warn')}>
@@ -317,6 +317,8 @@ function Composer({ chat, win, reply, say }) {
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
   const box = useRef(null);
+  const [touch, setTouch] = useState(false);
+  useEffect(() => { try { setTouch(window.matchMedia('(pointer: coarse)').matches); } catch (e) { /* desktop */ } }, []);
   useEffect(() => { try { const n = localStorage.getItem(NAME_KEY) || ''; setName(n); setEditName(!n); } catch (e) { setEditName(true); } }, []);
   useEffect(() => { const el = box.current; if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; } }, [text]);
   const saveName = (v) => { setName(v); try { localStorage.setItem(NAME_KEY, v.trim()); } catch (e) { /* ignore */ } };
@@ -344,12 +346,13 @@ function Composer({ chat, win, reply, say }) {
       <div className="wa-compose-row">
         <textarea ref={box} rows={1} value={text} placeholder="Type a message" aria-label="Message"
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }} maxLength={4096} />
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !touch) { e.preventDefault(); send(); } }} maxLength={4096}
+          enterKeyHint={touch ? 'enter' : 'send'} />
         <button className="wa-send" onClick={send} disabled={!text.trim() || sending} aria-label="Send">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.1 6.5L15 12 3.3 13.9z" fill="currentColor" /></svg>
         </button>
       </div>
-      <div className="wa-compose-hint">Enter to send · Shift + Enter for a new line{text.length > 3500 ? ` · ${4096 - text.length} characters left` : ''}</div>
+      <div className="wa-compose-hint">{touch ? '' : 'Enter to send · Shift + Enter for a new line'}{text.length > 3500 ? ` · ${4096 - text.length} characters left` : ''}</div>
     </footer>
   );
 }
