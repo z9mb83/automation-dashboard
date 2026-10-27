@@ -327,3 +327,67 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 .wa-foot-links { display: flex; gap: 14px; padding: 4px 16px 8px; background: var(--wa-head); font-size: 12px; color: var(--wa-sub); }
 .wa-foot-links:empty { display: none; }
 @media (max-width: 760px) { .wa-window { order: -1; } }
+
+/* ===================== phone layout ===================== */
+/* grid/flex children must be allowed to shrink, or one wide row (filters) widens the whole page */
+.wa-app { grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); }
+.wa-side, .wa-chat, .wa-row-main, .wa-chat-who { min-width: 0; }
+.wa-filters { flex-wrap: nowrap; }
+@media (max-width: 760px) {
+  .wa-app { grid-template-columns: minmax(0, 1fr); }
+  .wa-side-head { padding: 10px 12px; }
+  .wa-side-head h1 { font-size: 17px; }
+  .wa-new { padding: 7px 12px; font-size: 13px; }
+  .wa-note { margin: 0 10px 6px; font-size: 12px; }
+  .wa-search { padding: 6px 10px; }
+  .wa-filters { padding: 0 10px 8px; flex-wrap: wrap; overflow: visible; gap: 6px; }
+  .wa-row { padding: 10px 12px; gap: 10px; }
+  .wa-avatar { width: 40px; height: 40px; font-size: 14px; }
+  /* chat header: name on the first line, countdown + buttons on the second, nothing wraps */
+  .wa-chat-head { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: 6px 10px; padding: 8px 10px; }
+  .wa-chat-actions { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; width: auto; }
+  .wa-chat-actions .wa-window { order: 0; margin-right: auto; }
+  .wa-btn { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+  .wa-hide-sm { display: none; }
+  .wa-chat-sub { font-size: 12px; }
+  .wa-thread { padding: 10px 8px 12px; }
+  .wa-msg { max-width: 86%; }
+  .wa-msg-text { font-size: 15px; }
+  .wa-banner { padding: 7px 12px; font-size: 12.5px; }
+  /* typing box: no second countdown, safe area for the iPhone home bar */
+  .wa-compose { padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  .wa-compose-who .wa-window { display: none; }
+  .wa-compose-who input { width: 120px; }
+  .wa-compose-hint:empty { display: none; }
+  .wa-foot { padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); font-size: 12.5px; }
+  .wa-foot-links { padding: 2px 12px 6px; gap: 10px; font-size: 11.5px; flex-wrap: wrap; }
+  /* 16px text in fields stops iPhone from zooming the page when you tap them */
+  .wa-search input, .wa-compose textarea, .wa-compose-who input, .wa-modal input:not([type=checkbox]), .wa-modal select { font-size: 16px; }
+  .wa-modal-bg { padding: 0; align-items: flex-end; }
+  .wa-modal { width: 100%; max-height: 92dvh; border-radius: 14px 14px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 600px) {
+  .wrap { padding: 14px 12px 40px; }
+  /* filters wrap into pills instead of hiding brands off the edge */
+  .filters .seg { flex-wrap: wrap; border: 0; background: none; gap: 6px; overflow: visible; }
+  .filters .seg button { border: 1px solid var(--border); border-radius: 16px; background: var(--card); padding: 5px 11px; }
+  .filters .seg button + button { border-left: 1px solid var(--border); }
+  .filters .seg button[aria-pressed="true"] { border-color: var(--text-secondary); }
+  .card { padding: 14px 12px; }
+  /* list tables become cards: one block per row, each value with its column name */
+  table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100%; }
+  table.stack thead { display: none; }
+  table.stack tr { padding: 10px 0; border-bottom: 1px solid var(--grid); }
+  table.stack tr:last-child { border-bottom: 0; }
+  table.stack td { position: relative; padding: 3px 0 3px 96px; border: 0; text-align: right; overflow-wrap: anywhere; min-height: 22px; }
+  table.stack td::before { content: attr(data-label); position: absolute; left: 0; top: 4px; color: var(--text-muted); font-size: 12px; text-align: left; }
+  table.stack td[data-label=""] { padding-left: 0; }
+  table.stack td[data-label=""]::before { display: none; }
+  table.stack td .meter { width: 160px; margin: 4px 0 0 auto; }
+  table.stack td .reply-actions, table.stack td .btn-act { justify-content: flex-end; }
+  .report-grid { gap: 12px; }
+  .report-grid .field, .report-grid select { width: 100%; }
+  .dates input { flex: 1; min-width: 0; }
+  .input, .report-grid select { font-size: 16px; }
+}
