@@ -59,6 +59,7 @@ test('summary per template, per day, brand filter, stop list', () => {
   assert.equal(s.deliveredPct, 50);
   assert.equal(s.cost, 1.32);
   assert.equal(smsSummary(rows, { from: '2026-10-27', to: '2026-10-28', brand: 'SB' }).total.sent, 2);
+  assert.equal(smsSummary(rows, { from: '2026-10-28', to: '2026-10-28' }).total.sent, 5);   // one day only (Home card "sent today")
   assert.deepEqual(stopList(rows).map((r) => r.outcome).sort(), ['dnd', 'invalid']);
 });
 
