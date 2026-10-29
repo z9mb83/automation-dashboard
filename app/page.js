@@ -6,6 +6,7 @@ import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '.
 import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
 import { SmsChoice, SmsView } from '../components/sms';
+import { MailReplies, useMailWaiting } from '../components/mail-replies';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -213,6 +214,27 @@ export default function Dashboard() {
             <div className="card tile"><div className="label">Approved, waiting</div><div className="value">{fmt(view.approved)}</div><div className="note">{fmt(view.drafts)} drafts to review</div></div>
           </div>
 
+          <MailReplies brand={brand} fallback={<div className="section">
+            <section className="card">
+              <h2>Latest replies</h2><p className="sub">Leads who replied to our emails (newest first). Reply from the mailbox that sent the email, so the conversation stays in one thread.</p>
+              <div className="tablewrap">{view.replyList.length ? (
+                <div>{view.replyList.map((r) => (
+                  <div className="reply" key={r.brand + r.email + r.time}>
+                    <div className="reply-meta"><BrandCell code={r.brand} /><span>{r.name || 'No name'}</span>
+                      <span className="muted">{r.email}</span>{r.phone ? <span className="muted num">{r.phone}</span> : null}
+                      <span className="muted num">{r.time ? dayLabel(r.time.slice(0, 10)) + ', ' + r.time.slice(11) : '–'}</span></div>
+                    <div className="sent-from">{r.from
+                      ? <>Sent from <b>{r.from}</b>{r.subject ? <> · &ldquo;{r.subject}&rdquo;</> : null}</>
+                      : <span className="muted">Sending mailbox not recorded</span>}</div>
+                    {r.from ? <div className="reply-actions">
+                      <a className="btn-act" target="_blank" rel="noopener noreferrer"
+                        href={`https://mail.google.com/mail/u/${encodeURIComponent(r.from)}/#search/${encodeURIComponent('from:' + r.email)}`}>Open in Gmail</a>
+                    </div> : null}
+                  </div>
+                ))}</div>) : <p className="empty">No replies yet.</p>}</div>
+            </section>
+          </div>} />
+
           <div className="section">
             <ChartCard title="Emails sent per day" sub={`Last ${range} days, by brand · hover a day for details`}
               summary={perDaySummary(view.mailDays, view.series, { one: 'email', many: 'emails', verb: 'sent' })}
@@ -263,25 +285,7 @@ export default function Dashboard() {
             </section>
           </div>
 
-          <div className="grid two section">
-            <section className="card">
-              <h2>Latest replies</h2><p className="sub">Leads who replied to our emails (newest first). Reply from the mailbox that sent the email, so the conversation stays in one thread.</p>
-              <div className="tablewrap">{view.replyList.length ? (
-                <div>{view.replyList.map((r) => (
-                  <div className="reply" key={r.brand + r.email + r.time}>
-                    <div className="reply-meta"><BrandCell code={r.brand} /><span>{r.name || 'No name'}</span>
-                      <span className="muted">{r.email}</span>{r.phone ? <span className="muted num">{r.phone}</span> : null}
-                      <span className="muted num">{r.time ? dayLabel(r.time.slice(0, 10)) + ', ' + r.time.slice(11) : '–'}</span></div>
-                    <div className="sent-from">{r.from
-                      ? <>Sent from <b>{r.from}</b>{r.subject ? <> · &ldquo;{r.subject}&rdquo;</> : null}</>
-                      : <span className="muted">Sending mailbox not recorded</span>}</div>
-                    {r.from ? <div className="reply-actions">
-                      <a className="btn-act" target="_blank" rel="noopener noreferrer"
-                        href={`https://mail.google.com/mail/u/${encodeURIComponent(r.from)}/#search/${encodeURIComponent('from:' + r.email)}`}>Open in Gmail</a>
-                    </div> : null}
-                  </div>
-                ))}</div>) : <p className="empty">No replies yet.</p>}</div>
-            </section>
+          <div className="section">
             <section className="card">
               <h2>Latest emails</h2><p className="sub">Most recent send attempts</p>
               <div className="tablewrap">{view.sendList.length ? (
@@ -336,7 +340,9 @@ function PipelineTable({ brands }) {
 }
 
 function Home({ view, data, go }) {
+  const mailWaiting = useMailWaiting();
   const attention = [];
+  if (mailWaiting) attention.push(`${mailWaiting} email repl${mailWaiting > 1 ? 'ies' : 'y'} waiting for an answer`);
   const reconnect = view.mailboxes.filter((m) => mailboxStatus(m).kind === 'bad').length;
   if (reconnect) attention.push(`${reconnect} mailbox${reconnect > 1 ? 'es' : ''} need attention`);
   if (view.failedToday) attention.push(`${view.failedToday} email${view.failedToday > 1 ? 's' : ''} failed today`);
@@ -349,7 +355,9 @@ function Home({ view, data, go }) {
           <div className="choice-head"><MailIcon /><h2>Mail</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
           <div className="choice-stats">
             <div><div className="value">{fmt(view.today)}</div><div className="label">sent today</div></div>
-            <div><div className="value">{fmt(view.mailToday7Replies)}</div><div className="label">replies, last 7 days</div></div>
+            {mailWaiting === null
+              ? <div><div className="value">{fmt(view.mailToday7Replies)}</div><div className="label">replies, last 7 days</div></div>
+              : <div><div className={'value' + (mailWaiting ? ' warn-text' : '')}>{fmt(mailWaiting)}</div><div className="label">replies to answer</div></div>}
             <div><div className="value">{fmt(view.approved)}</div><div className="label">approved, waiting</div></div>
           </div>
           <p className="sub">Sends per day, replies, lead pipeline, mailboxes and limits</p>
