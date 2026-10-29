@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { BRANDS } from '../lib/brands';
 
 const indiaToday = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
-const TYPES = [['combined', 'Mail + WhatsApp'], ['mail', 'Mail'], ['whatsapp', 'WhatsApp']];
+const TYPES = [['combined', 'Mail + WhatsApp'], ['mail', 'Mail'], ['whatsapp', 'WhatsApp'], ['sms', 'SMS']];
 
 /** "Download report" panel: type, brand, and Today or a date range -> Excel file from /api/report. */
 export function ReportCard({ defaultType = 'combined', defaultBrand = 'ALL' }) {
@@ -44,7 +44,9 @@ export function ReportCard({ defaultType = 'combined', defaultBrand = 'ALL' }) {
   return (
     <section className="card section report-card">
       <h2>Download report</h2>
-      <p className="sub">Excel file with a summary per brand and one row per lead. Includes everyone sent a message in the period, plus anyone who replied in it.</p>
+      <p className="sub">{type === 'sms'
+        ? 'Excel file from the Telinfy delivery reports: a summary per template, SMS per day, every SMS with its result, and the numbers to stop texting (DND, not in use).'
+        : 'Excel file with a summary per brand and one row per lead. Includes everyone sent a message in the period, plus anyone who replied in it.'}</p>
       <div className="report-grid">
         <div className="field"><span className="field-label">Report</span>
           <div className="seg" role="group" aria-label="Report type">
@@ -52,7 +54,7 @@ export function ReportCard({ defaultType = 'combined', defaultBrand = 'ALL' }) {
           </div></div>
         <label className="field"><span className="field-label">Brand</span>
           <select className="input" value={brand} onChange={(e) => setBrand(e.target.value)}>
-            <option value="ALL">All brands</option>
+            <option value="ALL">{type === 'sms' ? 'All templates' : 'All brands'}</option>
             {BRANDS.map((b) => <option key={b.code} value={b.code}>{b.code} - {b.name}</option>)}
           </select></label>
         <div className="field"><span className="field-label">Period</span>

@@ -5,6 +5,7 @@ import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '
 import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
 import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
+import { SmsChoice, SmsView } from '../components/sms';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -66,7 +67,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const read = () => { const h = window.location.hash.replace('#', ''); setPage(h === 'mail' || h === 'whatsapp' ? h : 'home'); };
+    const read = () => { const h = window.location.hash.replace('#', ''); setPage(h === 'mail' || h === 'whatsapp' || h === 'sms' ? h : 'home'); };
     read();
     window.addEventListener('hashchange', read);
     return () => window.removeEventListener('hashchange', read);
@@ -176,6 +177,7 @@ export default function Dashboard() {
           <div className="seg">
             <button aria-pressed={page === 'mail'} onClick={() => go('mail')}>Mail</button>
             <button aria-pressed={page === 'whatsapp'} onClick={() => go('whatsapp')}>WhatsApp</button>
+            <button aria-pressed={page === 'sms'} onClick={() => go('sms')}>SMS</button>
           </div>
         </nav>
       ) : null}
@@ -197,6 +199,7 @@ export default function Dashboard() {
       ) : null}
 
       {view && page === 'home' ? <Home view={view} data={data} go={go} /> : null}
+      {view && page === 'sms' ? <SmsView range={range} brand={brand} /> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
         <div className={loading && manual ? 'stale' : ''}>
@@ -366,6 +369,7 @@ function Home({ view, data, go }) {
           <div className="choice-head"><ChatIcon /><h2>WhatsApp inbox</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
           <p className="sub">Every conversation like in WhatsApp: the message we sent, each reply as it arrives, Call and Open in WhatsApp, add a new contact and send.</p>
         </a>
+        <SmsChoice go={go} />
       </div>
       {attention.length ? <div className="banner" style={{ marginTop: 14 }}>Needs attention: {attention.join(' · ')}</div> : null}
       {view.waReplyList.length ? (
