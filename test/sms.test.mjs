@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { templateOf, outcome, istFromUtc, normalize, parseReports, smsParams, smsSummary, stopList, smsReportSheets, smsFileName, walletBalance } from '../lib/sms.js';
-import { sampleSmsRows } from '../lib/telinfy.js';
+import { sampleSmsRows, telinfyEnd } from '../lib/telinfy.js';
 import { buildXlsx } from '../lib/xlsx.js';
 
 const PEG = '99 Consulting Services - Property Experts Group. Trusted real estate guidance with 30+ Years Experience.';
@@ -77,7 +77,10 @@ test('Excel report: four sheets, phone numbers as text, file name', () => {
 test('wallet balance is found in any shape; sample rows stay in range', () => {
   assert.equal(walletBalance({ success: true, data: { balance: '10500.25' } }), 10500.25);
   assert.equal(walletBalance({ credits: 12 }), 12);
+  assert.equal(walletBalance({ success: true, wallet: 10842.5, credit_expiry: '2027-10-01' }), 10842.5);   // real Telinfy shape
   assert.equal(walletBalance({ success: true }), null);
+  assert.equal(telinfyEnd('2026-10-29', '2026-10-29'), '2026-10-29');      // Telinfy rejects future end dates
+  assert.equal(telinfyEnd('2026-10-28', '2026-10-29'), '2026-10-29');
   const rows = sampleSmsRows('2026-10-20', '2026-10-28');
   assert.ok(rows.length > 100);
   assert.ok(rows.every((r) => r.sentAt >= '2026-10-20' && r.sentAt < '2026-10-29'));
