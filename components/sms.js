@@ -52,6 +52,14 @@ export function SmsView({ range, brand }) {
   const { data, error, loading, load } = useSms(range);
   const s = useMemo(() => (data ? smsSummary(data.rows, { from: data.from, to: data.to, brand }) : null), [data, brand]);
   const stops = useMemo(() => (data ? stopList(data.rows.filter((r) => brand === 'ALL' || r.brand === brand)) : []), [data, brand]);
+  const [allStops, setAllStops] = useState(false);
+  // phone layout: tables become cards; label each cell with its column heading (data arrives after the page renders)
+  useEffect(() => {
+    document.querySelectorAll('table.stack').forEach((t) => {
+      const heads = [...t.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+      t.querySelectorAll('tbody tr').forEach((tr) => [...tr.children].forEach((td, i) => td.setAttribute('data-label', heads[i] || '')));
+    });
+  });
 
   if (!data) return error ? <div className="banner err">Could not load SMS reports: {error}</div> : <p className="muted">Loading SMS reports from Telinfy…</p>;
   const series = s.byTemplate.map((t) => ({ key: t.key, label: t.name, color: brandVar(t.brand || 'SB') }));
@@ -110,9 +118,11 @@ export function SmsView({ range, brand }) {
           <p className="sub">{fmt(stops.length)} numbers are on DND or not in use, so Telinfy charges for SMS that can never arrive. Newest first; the full list is in the SMS report download (sheet &ldquo;Stop texting&rdquo;).</p>
           <div className="tablewrap">{stops.length ? (
             <table className="stack"><thead><tr><th>Mobile</th><th>Template</th><th>Why</th><th>Last sent</th></tr></thead>
-              <tbody>{stops.slice(0, 25).map((r) => (
+              <tbody>{stops.slice(0, allStops ? 200 : 10).map((r) => (
                 <tr key={r.phone}><td className="num">{pretty(r.phone)}</td><td>{tplName(r.template)}</td><td>{r.reason}</td><td className="num">{dayLabel(r.sentAt.slice(0, 10))}, {r.sentAt.slice(11, 16)}</td></tr>
               ))}</tbody></table>) : <p className="empty">None in this period.</p>}</div>
+          {stops.length > 10 ? <button className="linkbtn" style={{ marginTop: 10 }} onClick={() => setAllStops(!allStops)}>
+            {allStops ? 'Show fewer' : `Show ${Math.min(stops.length, 200) - 10} more`}</button> : null}
         </section>
       </div>
       <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Telinfy delivery reports (sender 099559), read-only. The OCR sheets are not changed. Times are India time. &ldquo;{label('pending')}&rdquo; means the operator has not sent its report yet.</p>
