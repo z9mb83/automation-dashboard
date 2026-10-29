@@ -392,3 +392,19 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
   .dates input { flex: 1; min-width: 0; }
   .input, .report-grid select { font-size: 16px; }
 }
+
+/* email reply tracker */
+.mr-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.mr-kpis { margin: 12px 0 14px; }
+.mr-kpis .tile { box-shadow: none; }
+.tile.alert .value { color: var(--critical); }
+.warn-text { color: var(--critical); }
+.mr-filters { margin-bottom: 6px; }
+.mr-search { flex: 1 1 220px; min-width: 0; max-width: 340px; }
+.mr-count { display: inline-block; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--critical); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.mr-item .reply-meta b { font-weight: 600; }
+.waitb { border-radius: 4px; padding: 1px 7px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.waitb.ok { background: #d9fdd3; color: #0a6b47; } .waitb.soon { background: #fff1d6; color: #8a5a00; } .waitb.late { background: #fde3e3; color: #a51d1d; }
+:root[data-theme="dark"] .waitb.ok { background: #103529; color: #5fd3a4; } :root[data-theme="dark"] .waitb.soon { background: #3a3000; color: #ffd166; }
+:root[data-theme="dark"] .waitb.late { background: #3d1515; color: #ffb4b4; }
+@media (max-width: 560px) { .mr-search { max-width: none; flex-basis: 100%; } }
