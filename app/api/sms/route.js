@@ -15,7 +15,7 @@ export async function GET(req) {
   if (!telinfyKey()) return json({ generatedAt: stamp(), ...p, rows: sampleSmsRows(p.from, p.to), wallet: null, sample: true });
   try {
     const [rows, wallet] = await Promise.all([smsRows(p.from, p.to), smsWallet()]);
-    return json({ generatedAt: stamp(), ...p, rows, wallet });
+    return json({ generatedAt: stamp(), ...p, rows, wallet: wallet.balance, walletNote: wallet.note });
   } catch (e) {
     return json({ error: String(e.message || e).slice(0, 300) }, 502);
   }
