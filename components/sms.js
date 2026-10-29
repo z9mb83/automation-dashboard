@@ -41,7 +41,7 @@ export function SmsChoice({ go }) {
       <div className="choice-stats">
         <div><div className="value">{today ? fmt(today.total.sent) : '…'}</div><div className="label">sent today</div></div>
         <div><div className="value">{week ? week.deliveredPct + '%' : '…'}</div><div className="label">delivered, 7 days</div></div>
-        <div><div className="value">{week ? fmt(week.total.dnd) : '…'}</div><div className="label">DND blocked, 7 days</div></div>
+        <div><div className="value">{week ? fmt(week.total.dnd) : '…'}</div><div className="label">DND, 7 days</div></div>
       </div>
       <p className="sub">OCR sheets (Shaadi, Property) via Telinfy: delivery per template, DND and failed numbers</p>
     </button>

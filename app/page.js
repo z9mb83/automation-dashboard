@@ -344,7 +344,7 @@ function Home({ view, data, go }) {
   return (
     <div>
       <p className="secondary" style={{ margin: '0 0 14px' }}>Choose a channel. Numbers are for all brands.</p>
-      <div className="grid two">
+      <div className="grid three">
         <button className="card choice" onClick={() => go('mail')} aria-label="Open Mail">
           <div className="choice-head"><MailIcon /><h2>Mail</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
           <div className="choice-stats">
@@ -363,12 +363,6 @@ function Home({ view, data, go }) {
           </div>
           <p className="sub">Replies with their messages, delivery and read status, failures with reasons</p>
         </button>
-      </div>
-      <div className="grid two" style={{ marginTop: 14 }}>
-        <a className="card choice" href="/inbox" aria-label="Open the WhatsApp inbox" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <div className="choice-head"><ChatIcon /><h2>WhatsApp inbox</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
-          <p className="sub">Every conversation like in WhatsApp: the message we sent, each reply as it arrives, Call and Open in WhatsApp, add a new contact and send.</p>
-        </a>
         <SmsChoice go={go} />
       </div>
       {attention.length ? <div className="banner" style={{ marginTop: 14 }}>Needs attention: {attention.join(' · ')}</div> : null}
