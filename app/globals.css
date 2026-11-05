@@ -408,3 +408,32 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 :root[data-theme="dark"] .waitb.ok { background: #103529; color: #5fd3a4; } :root[data-theme="dark"] .waitb.soon { background: #3a3000; color: #ffd166; }
 :root[data-theme="dark"] .waitb.late { background: #3d1515; color: #ffb4b4; }
 @media (max-width: 560px) { .mr-search { max-width: none; flex-basis: 100%; } }
+
+/* sending costs: header button + hover panel */
+.top-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.top-actions .inbox-btn { margin-left: 0; }
+.cost-wrap { position: relative; }
+.cost-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 22px; border: 1px solid var(--border); background: var(--card); color: var(--text-primary); font: inherit; font-weight: 600; cursor: pointer; }
+.cost-btn:hover, .cost-wrap.open .cost-btn { border-color: var(--text-secondary); }
+.cost-btn:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+.cost-btn-sub { font-weight: 400; color: var(--text-secondary); }
+.cost-pop { display: none; position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; width: 340px; max-width: calc(100vw - 32px); padding: 14px 16px;
+  background: var(--card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.14); font-size: 13.5px; }
+.cost-wrap:hover .cost-pop, .cost-wrap:focus-within .cost-pop, .cost-wrap.open .cost-pop { display: block; }
+.cost-wrap::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 10px; }   /* keeps hover while moving to the panel */
+.cost-pop-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--grid); }
+.cost-pop-head b { font-size: 20px; }
+.cost-line { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.cost-line small { display: block; color: var(--text-secondary); font-size: 11.5px; }
+.cost-line b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cost-line.month { border-top: 1px solid var(--grid); margin-top: 4px; padding-top: 8px; }
+.cost-note { margin: 6px 0 0; font-size: 12px; color: var(--text-secondary); }
+.cost-more { display: inline-block; margin-top: 10px; font-size: 13px; }
+@media (max-width: 520px) {
+  .top-actions { position: absolute; top: 14px; right: 16px; gap: 8px; }
+  .top-actions .inbox-btn { position: static; }
+  .cost-btn { padding: 8px 11px; }
+  .cost-btn-sub { display: none; }
+  .cost-pop { position: fixed; left: 16px; right: 16px; top: 64px; width: auto; max-width: none; }
+  .top h1 { padding-right: 150px; }
+}

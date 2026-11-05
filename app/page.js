@@ -7,6 +7,7 @@ import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
 import { SmsChoice, SmsView } from '../components/sms';
 import { MailReplies, useMailWaiting } from '../components/mail-replies';
+import { CostButton, CostSection } from '../components/costs';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -68,7 +69,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const read = () => { const h = window.location.hash.replace('#', ''); setPage(h === 'mail' || h === 'whatsapp' || h === 'sms' ? h : 'home'); };
+    const read = () => {
+      const h = window.location.hash.replace('#', '');
+      setPage(h === 'mail' || h === 'whatsapp' || h === 'sms' ? h : 'home');
+      if (h === 'costs') {   // costs section loads after the page: wait for it, then scroll to it
+        let tries = 0;
+        const t = setInterval(() => { const el = document.getElementById('costs'); if (el || ++tries > 20) { clearInterval(t); if (el) el.scrollIntoView({ behavior: 'smooth' }); } }, 250);
+      }
+    };
     read();
     window.addEventListener('hashchange', read);
     return () => window.removeEventListener('hashchange', read);
@@ -166,7 +174,7 @@ export default function Dashboard() {
             <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">Sign out</button></form>
           </div>
         </div>
-        <InboxButton />
+        <div className="top-actions"><CostButton /><InboxButton /></div>
       </header>
 
       {data?.sample ? <div className="banner">Showing <b>sample data</b>: the sheet feed is not connected yet (set SHEET_API_URL and SHEET_API_KEY on Vercel).</div> : null}
@@ -380,6 +388,7 @@ function Home({ view, data, go }) {
           <ReplyItem r={view.waReplyList[0]} />
         </section>
       ) : null}
+      <CostSection />
     </div>
   );
 }
