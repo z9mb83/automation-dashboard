@@ -23,12 +23,23 @@ every Gmail mailbox against its daily limit (flags "Needs reconnect", "Paused", 
 latest replies, emails and WhatsApp messages. Filter by date range and brand. Every chart has a table view.
 The page refreshes every minute; the sheet feed caches for 30 seconds.
 
+Pages and buttons:
+| Where | What |
+|---|---|
+| Home | Mail, WhatsApp and SMS cards in one row, sending costs section (`/#costs`) |
+| Header **Costs** button | This month's spend; hover for the breakdown (WhatsApp delivered marketing templates x Meta rate + 18% GST, SMS x Rs 0.22, email free). Rates: `lib/costs.js` (`RATES`) |
+| Mail | Charts above plus the **email reply tracker**: Needs reply / Answered / Marked handled / Auto-replies, waiting time, Gmail link to the thread, *Mark handled*. Data from the hidden `Mail Threads` tab (filled by the email sender every 15 minutes) |
+| WhatsApp | Sent / replies per day, what happened to the messages, Not delivered (with Meta's reason), read but no reply (follow-up calls) |
+| **Inbox** (top right) | WhatsApp conversations per brand, from the sheet feed (`?inbox=all`) |
+| SMS | Telinfy reports per template, delivered / failed / DND, stop list, **Excel report** download. Needs `TELINFY_API_KEY` |
+
 ## Settings (Vercel → Project → Settings → Environment Variables)
 | Name | Where it comes from |
 |---|---|
 | `SHEET_API_URL` | Sheet menu **AUTOMATION → Dashboard → Show feed link** (ends in `/exec`) |
 | `SHEET_API_KEY` | Sheet menu **AUTOMATION → Dashboard → Create access key** (shown once) |
 | `DASHBOARD_PASSWORD` | Any password you choose; people type it to open the dashboard |
+| `TELINFY_API_KEY` | Telinfy (username `99consulting`) → Developer / API key. Only for the SMS page; stays on the server |
 
 Without `SHEET_API_URL`/`SHEET_API_KEY` the page shows clearly-labelled **sample data**.
 Changing the password or key signs everyone out.
@@ -54,7 +65,12 @@ Already set up (29 Sep 2026). For reference / to rebuild from scratch:
 | Page says "Dashboard password is not configured" | Set `DASHBOARD_PASSWORD` in **Settings -> Environment Variables** and redeploy | `middleware.js` |
 | Feed code changed in the sheet but data looks old | The Apps Script web app serves a fixed version: **Deploy -> Manage deployments -> edit -> New version** | `common/Dashboard.gs` deployment |
 | Wrong number on a tile/chart | Counting rules | `common/Dashboard.gs` (`dbLeadStats_`), `app/page.js` |
+| SMS page: "Telinfy refused the API key (HTTP 401/403)" | Paste the key again into `TELINFY_API_KEY`, turn IP whitelisting off in Telinfy, Redeploy | `lib/telinfy.js` |
+| Costs look wrong | Rates changed (Meta changes them quarterly): edit `RATES` in `lib/costs.js` | `lib/costs.js` |
+| Mail reply tracker empty | The email sender fills `Mail Threads` every 15 minutes; a mailbox showing *Needs reconnect* has no replies tracked | `lib/mailreplies.js`, sender repo |
 | Chart looks wrong | Chart drawing | `components/charts.js`, colours in `app/globals.css` |
+
+More problems and fixes: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Run locally
 ```
