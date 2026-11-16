@@ -5,6 +5,9 @@ import { smsFileName, smsParams, smsReportSheets } from '../../../lib/sms';
 import { sampleSmsRows, smsRows, telinfyKey } from '../../../lib/telinfy';
 
 export const dynamic = 'force-dynamic';
+// The sheet feed reads every brand tab (SB ~85,000 rows): usually 15-25 s, longer while the sheet is busy
+// (WhatsApp sending, bulk lead runs). Allow up to 60 s (Vercel Hobby maximum) instead of the default.
+export const maxDuration = 60;
 
 const fail = (msg, status = 400) => Response.json({ error: msg }, { status, headers: { 'Cache-Control': 'no-store' } });
 
