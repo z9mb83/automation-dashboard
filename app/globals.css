@@ -437,3 +437,11 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
   .cost-pop { position: fixed; left: 16px; right: 16px; top: 64px; width: auto; max-width: none; }
   .top h1 { padding-right: 150px; }
 }
+
+/* page navigation (Home · Send WhatsApp · Analytics · Reports & costs) */
+.main-nav { margin-bottom: 16px; }
+.main-nav .seg button { padding: 8px 14px; font-size: 14px; }
+.page-title { font-size: 15px; font-weight: 600; margin: 0 0 10px; color: var(--text-primary); }
+a.card.choice { text-decoration: none; }
+.steps { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; font-size: 14px; color: var(--text-secondary); }
+.steps a { color: var(--series-1); }
