@@ -25,7 +25,10 @@ export function ReportCard({ defaultType = 'combined', defaultBrand = 'ALL' }) {
     setBusy(true); setMsg('');
     try {
       const qs = new URLSearchParams({ type, brand, ...range });
-      const res = await fetch('/api/report?' + qs, { cache: 'no-store' });
+      // the report can take 20+ s while the sheet is busy; a dropped connection ("Failed to fetch") is retried once
+      let res;
+      try { res = await fetch('/api/report?' + qs, { cache: 'no-store' }); }
+      catch (e) { setMsg('The sheet is slow right now, trying again...'); res = await fetch('/api/report?' + qs, { cache: 'no-store' }); }
       if (res.status === 401) { window.location.href = '/login'; return; }
       if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error || 'HTTP ' + res.status); }
       const blob = await res.blob();
@@ -37,7 +40,9 @@ export function ReportCard({ defaultType = 'combined', defaultBrand = 'ALL' }) {
       setTimeout(() => URL.revokeObjectURL(url), 5000);
       setMsg('Downloaded ' + name);
     } catch (e) {
-      setMsg('Could not make the report: ' + String(e.message || e));
+      const m = String(e.message || e);
+      setMsg('Could not make the report: ' + (/failed to fetch|network/i.test(m)
+        ? 'the sheet took too long to answer (it may be busy sending). Try again in a minute.' : m));
     } finally { setBusy(false); }
   };
 
