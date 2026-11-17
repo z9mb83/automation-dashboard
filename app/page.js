@@ -6,7 +6,7 @@ import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '.
 import { WhatsAppBulk } from '../components/wa-bulk';
 import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
-import { SmsChoice, SmsView } from '../components/sms';
+import { SmsView } from '../components/sms';
 import { MailReplies, useMailWaiting } from '../components/mail-replies';
 import { CostButton, CostSection } from '../components/costs';
 
@@ -20,6 +20,8 @@ const PIPE_SLICES = [
   { key: 'toDraft', label: 'New (no draft yet)', color: 'var(--axis)' },
 ];
 const REFRESH_MS = 60000;
+const PAGES = ['send', 'reports', 'mail', 'whatsapp', 'sms'];
+const ANALYTICS = ['mail', 'whatsapp', 'sms'];
 const WA_STAGES = [
   { key: 'read', label: 'Read', color: 'var(--good)' },
   { key: 'delivered', label: 'Delivered, not read yet', color: 'var(--series-1)' },
@@ -72,7 +74,8 @@ export default function Dashboard() {
   useEffect(() => {
     const read = () => {
       const h = window.location.hash.replace('#', '');
-      setPage(h === 'mail' || h === 'whatsapp' || h === 'sms' ? h : 'home');
+      // pages: home · send · analytics (mail / whatsapp / sms) · reports (costs live on the reports page)
+      setPage(PAGES.includes(h) ? h : h === 'analytics' ? 'whatsapp' : h === 'costs' ? 'reports' : 'home');
       if (h === 'costs') {   // costs section loads after the page: wait for it, then scroll to it
         let tries = 0;
         const t = setInterval(() => { const el = document.getElementById('costs'); if (el || ++tries > 20) { clearInterval(t); if (el) el.scrollIntoView({ behavior: 'smooth' }); } }, 250);
@@ -82,7 +85,8 @@ export default function Dashboard() {
     window.addEventListener('hashchange', read);
     return () => window.removeEventListener('hashchange', read);
   }, []);
-  const go = (p) => { window.location.hash = p === 'home' ? '' : p; setPage(p); window.scrollTo(0, 0); };
+  const go = (p) => { window.location.hash = p === 'home' ? '' : p; setPage(p); if (p === 'home') setBrand('ALL'); window.scrollTo(0, 0); };
+  const isAnalytics = ANALYTICS.includes(page);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -181,9 +185,17 @@ export default function Dashboard() {
       {data?.sample ? <div className="banner">Showing <b>sample data</b>: the sheet feed is not connected yet (set SHEET_API_URL and SHEET_API_KEY on Vercel).</div> : null}
       {error ? <div className="banner err">Could not refresh: {error}{data ? ' Showing the last good data.' : ''}</div> : null}
 
-      {page !== 'home' ? (
-        <nav className="tabs" aria-label="Sections">
-          <button className="linkbtn back" onClick={() => go('home')}>&larr; Home</button>
+      <nav className="tabs main-nav" aria-label="Pages">
+        <div className="seg">
+          <button aria-pressed={page === 'home'} onClick={() => go('home')}>Home</button>
+          <button aria-pressed={page === 'send'} onClick={() => go('send')}>Send WhatsApp</button>
+          <button aria-pressed={isAnalytics} onClick={() => go(isAnalytics ? page : 'whatsapp')}>Analytics</button>
+          <button aria-pressed={page === 'reports'} onClick={() => go('reports')}>Reports &amp; costs</button>
+        </div>
+      </nav>
+
+      {isAnalytics ? (
+        <nav className="tabs" aria-label="Analytics channel">
           <div className="seg">
             <button aria-pressed={page === 'mail'} onClick={() => go('mail')}>Mail</button>
             <button aria-pressed={page === 'whatsapp'} onClick={() => go('whatsapp')}>WhatsApp</button>
@@ -192,7 +204,7 @@ export default function Dashboard() {
         </nav>
       ) : null}
 
-      {page !== 'home' ? (
+      {isAnalytics ? (
       <div className="filters" role="toolbar" aria-label="Filters">
           <div className="seg" aria-label="Date range">
             {RANGES.map((r) => <button key={r.days} aria-pressed={range === r.days} onClick={() => setRange(r.days)}>Last {r.label}</button>)}
@@ -208,9 +220,10 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {view && page === 'home' ? <Home view={view} data={data} go={go} /> : null}
+      {view && page === 'home' ? <Home view={view} go={go} /> : null}
       {view && page === 'sms' ? <SmsView range={range} brand={brand} /> : null}
-      {view && page === 'whatsapp' ? <WhatsAppBulk defaultBrand={brand} /> : null}
+      {view && page === 'send' ? <SendPage /> : null}
+      {view && page === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" /><CostSection /></div> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
         <div className={loading && manual ? 'stale' : ''}>
@@ -312,7 +325,6 @@ export default function Dashboard() {
           <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (read-only). Times are India time.</p>
         </div>
       ) : null}
-      {view ? <ReportCard defaultType={page === 'home' ? 'combined' : page} defaultBrand={page === 'home' ? 'ALL' : brand} /> : null}
       {!view && !error ? <p className="muted">Loading…</p> : null}
     </div>
   );
@@ -349,48 +361,59 @@ function PipelineTable({ brands }) {
   );
 }
 
-function Home({ view, data, go }) {
+function Home({ view, go }) {
   const mailWaiting = useMailWaiting();
   const attention = [];
   if (mailWaiting) attention.push(`${mailWaiting} email repl${mailWaiting > 1 ? 'ies' : 'y'} waiting for an answer`);
   const reconnect = view.mailboxes.filter((m) => mailboxStatus(m).kind === 'bad').length;
   if (reconnect) attention.push(`${reconnect} mailbox${reconnect > 1 ? 'es' : ''} need attention`);
   if (view.failedToday) attention.push(`${view.failedToday} email${view.failedToday > 1 ? 's' : ''} failed today`);
-  if (view.waUndelivered) attention.push(`${view.waUndelivered} WhatsApp not delivered`);
   return (
     <div>
-      <p className="secondary" style={{ margin: '0 0 14px' }}>Choose a channel. Numbers are for all brands.</p>
-      <div className="grid three">
-        <button className="card choice" onClick={() => go('mail')} aria-label="Open Mail">
-          <div className="choice-head"><MailIcon /><h2>Mail</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
-          <div className="choice-stats">
-            <div><div className="value">{fmt(view.today)}</div><div className="label">sent today</div></div>
-            {mailWaiting === null
-              ? <div><div className="value">{fmt(view.mailToday7Replies)}</div><div className="label">replies, last 7 days</div></div>
-              : <div><div className={'value' + (mailWaiting ? ' warn-text' : '')}>{fmt(mailWaiting)}</div><div className="label">replies to answer</div></div>}
-            <div><div className="value">{fmt(view.approved)}</div><div className="label">approved, waiting</div></div>
-          </div>
-          <p className="sub">Sends per day, replies, lead pipeline, mailboxes and limits</p>
-        </button>
-        <button className="card choice" onClick={() => go('whatsapp')} aria-label="Open WhatsApp">
-          <div className="choice-head"><ChatIcon /><h2>WhatsApp</h2><span className="chev" aria-hidden="true">&rarr;</span></div>
-          <div className="choice-stats">
-            <div><div className="value">{fmt(view.waTodayMsgs)}</div><div className="label">sent today</div></div>
-            <div><div className="value">{fmt(view.waRead)}</div><div className="label">read</div></div>
-            <div><div className="value">{fmt(view.waTodayReplies)}</div><div className="label">replies today</div></div>
-          </div>
-          <p className="sub">Replies with their messages, delivery and read status, failures with reasons</p>
-        </button>
-        <SmsChoice go={go} />
+      <h2 className="page-title">Today</h2>
+      <div className="grid kpis">
+        <div className="card tile hero"><div className="label">WhatsApp sent today</div><div className="value">{fmt(view.waTodayMsgs)}</div>
+          <div className="note">all brands</div></div>
+        <div className="card tile"><div className="label">WhatsApp replies today</div><div className="value">{fmt(view.waTodayReplies)}</div>
+          <div className="note">answer them in the Inbox</div></div>
+        <div className="card tile"><div className="label">Emails sent today</div><div className="value">{fmt(view.today)}</div>
+          <div className="note">{view.failedToday ? `${view.failedToday} failed` : 'no failures'}</div></div>
+        <div className="card tile"><div className="label">Email replies to answer</div>
+          <div className={'value' + (mailWaiting ? ' warn-text' : '')}>{mailWaiting === null ? '…' : fmt(mailWaiting)}</div>
+          <div className="note">{fmt(view.mailToday7Replies)} replies in the last 7 days</div></div>
       </div>
       {attention.length ? <div className="banner" style={{ marginTop: 14 }}>Needs attention: {attention.join(' · ')}</div> : null}
-      {view.waReplyList.length ? (
-        <section className="card section">
-          <h2>Latest WhatsApp reply</h2>
-          <ReplyItem r={view.waReplyList[0]} />
-        </section>
-      ) : null}
-      <CostSection />
+
+      <h2 className="page-title" style={{ marginTop: 22 }}>What do you want to do?</h2>
+      <div className="grid three">
+        <ActionCard icon={<ChatIcon />} title="Send WhatsApp" text="Upload a phone list for a brand, then send to the next 30 numbers." onClick={() => go('send')} />
+        <ActionCard icon={<ChatIcon />} title="Inbox" text="Read and answer WhatsApp chats from customers." href="/inbox" />
+        <ActionCard icon={<MailIcon />} title="Email replies" text="Leads who answered our emails, with a link to the Gmail thread." onClick={() => go('mail')} />
+        <ActionCard icon={<ReportIcon />} title="Reports & costs" text="Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost." onClick={() => go('reports')} />
+        <ActionCard icon={<ChartIcon />} title="Analytics" text="Charts and trends: sends, replies, delivery, pipeline, mailboxes." onClick={() => go('whatsapp')} />
+      </div>
+    </div>
+  );
+}
+
+function ActionCard({ icon, title, text, onClick, href }) {
+  const inner = <><div className="choice-head">{icon}<h2>{title}</h2><span className="chev" aria-hidden="true">&rarr;</span></div><p className="sub">{text}</p></>;
+  return href ? <a className="card choice" href={href}>{inner}</a> : <button className="card choice" onClick={onClick}>{inner}</button>;
+}
+
+function SendPage() {
+  return (
+    <div>
+      <WhatsAppBulk defaultBrand="SB" />
+      <section className="card section">
+        <h2>How it works</h2>
+        <ol className="steps">
+          <li>Choose the brand. Each brand has its own list and its own daily limit (Limits tab).</li>
+          <li>Upload a CSV or Excel file with a phone column. Everyone in it is added with WhatsApp consent = Yes; numbers already there, in Do Not Contact or repeated are skipped.</li>
+          <li>Click <b>Send next 30</b> as often as you like, up to the daily limit. Nobody gets the template twice.</li>
+          <li>Replies arrive in the <a href="/inbox">Inbox</a>.</li>
+        </ol>
+      </section>
     </div>
   );
 }
@@ -510,6 +533,12 @@ function WhatsAppView({ view, data, range, loading }) {
 
 const MailIcon = () => (
   <svg className="choice-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" /><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg>
+);
+const ReportIcon = () => (
+  <svg className="choice-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M9 12h7M9 16h7M9 8h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+);
+const ChartIcon = () => (
+  <svg className="choice-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
 );
 const ChatIcon = () => (
   <svg className="choice-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18.5l1.3-3.6A7.5 7.5 0 1 1 8.8 18l-4.8.5z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /><path d="M9 10.5h6M9 13.5h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>

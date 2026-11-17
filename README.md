@@ -16,6 +16,12 @@ master sheet ──(read-only)──> common/Dashboard.gs web app (JSON, needs a
             this repo on Vercel: /api/data (server, holds the key) ──> browser (charts)
 ```
 
+## Pages (since 17 Nov 2026)
+**Home** (today's numbers, what needs attention, big buttons) · **Send WhatsApp** (upload a phone list, Send next 30) ·
+**Analytics** (Mail / WhatsApp / SMS charts and tables, with the 7/14/30-day and brand filters) · **Reports & costs**
+(Excel download, sending costs) · **Inbox** (top right). Old links still work: `#mail`, `#whatsapp`, `#sms` open Analytics,
+`#costs` opens Reports & costs.
+
 ## What it shows
 Emails sent today (and failures) · sent / replies / reply rate / WhatsApp for 7, 14 or 30 days ·
 emails and replies per day by brand · sent by brand · lead pipeline (no draft → review → approved → sent → replied) ·
