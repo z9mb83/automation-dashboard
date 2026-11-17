@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BRANDS, brandVar } from '../lib/brands';
 import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '../components/charts';
 import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
-import { WhatsAppBulk } from '../components/wa-bulk';
+import { SendBrand, SendLanding } from '../components/wa-send';
 import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
 import { SmsView } from '../components/sms';
@@ -63,6 +63,7 @@ export default function Dashboard() {
   const [range, setRange] = useState(7);
   const [brand, setBrand] = useState('ALL');
   const [page, setPage] = useState('home');
+  const [sendBrand, setSendBrand] = useState('');
   const [manual, setManual] = useState(false);  // dim the page only for a refresh the viewer asked for
   const [theme, setTheme] = useState('light');
   useEffect(() => { setTheme(document.documentElement.getAttribute('data-theme') || 'light'); }, []);
@@ -75,7 +76,9 @@ export default function Dashboard() {
     const read = () => {
       const h = window.location.hash.replace('#', '');
       // pages: home · send · analytics (mail / whatsapp / sms) · reports (costs live on the reports page)
-      setPage(PAGES.includes(h) ? h : h === 'analytics' ? 'whatsapp' : h === 'costs' ? 'reports' : 'home');
+      const [p0, sub] = h.split('/');
+      setSendBrand(p0 === 'send' && BRANDS.some((b) => b.code === sub) ? sub : '');
+      setPage(PAGES.includes(p0) ? p0 : p0 === 'analytics' ? 'whatsapp' : p0 === 'costs' ? 'reports' : 'home');
       if (h === 'costs') {   // costs section loads after the page: wait for it, then scroll to it
         let tries = 0;
         const t = setInterval(() => { const el = document.getElementById('costs'); if (el || ++tries > 20) { clearInterval(t); if (el) el.scrollIntoView({ behavior: 'smooth' }); } }, 250);
@@ -85,7 +88,9 @@ export default function Dashboard() {
     window.addEventListener('hashchange', read);
     return () => window.removeEventListener('hashchange', read);
   }, []);
-  const go = (p) => { window.location.hash = p === 'home' ? '' : p; setPage(p); if (p === 'home') setBrand('ALL'); window.scrollTo(0, 0); };
+  const go = (p) => { window.location.hash = p === 'home' ? '' : p; setPage(p); setSendBrand(''); if (p === 'home') setBrand('ALL'); window.scrollTo(0, 0); };
+  const openSend = (code) => { window.location.hash = 'send/' + code; setPage('send'); setSendBrand(code); window.scrollTo(0, 0); };
+  const brandAnalytics = (code) => { setBrand(code); go('whatsapp'); };
   const isAnalytics = ANALYTICS.includes(page);
 
   const load = useCallback(async () => {
@@ -222,7 +227,8 @@ export default function Dashboard() {
 
       {view && page === 'home' ? <Home view={view} go={go} /> : null}
       {view && page === 'sms' ? <SmsView range={range} brand={brand} /> : null}
-      {view && page === 'send' ? <SendPage /> : null}
+      {view && page === 'send' && !sendBrand ? <SendLanding open={openSend} /> : null}
+      {view && page === 'send' && sendBrand ? <SendBrand code={sendBrand} data={data} back={() => go('send')} analytics={brandAnalytics} /> : null}
       {view && page === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" /><CostSection /></div> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
@@ -399,23 +405,6 @@ function Home({ view, go }) {
 function ActionCard({ icon, title, text, onClick, href }) {
   const inner = <><div className="choice-head">{icon}<h2>{title}</h2><span className="chev" aria-hidden="true">&rarr;</span></div><p className="sub">{text}</p></>;
   return href ? <a className="card choice" href={href}>{inner}</a> : <button className="card choice" onClick={onClick}>{inner}</button>;
-}
-
-function SendPage() {
-  return (
-    <div>
-      <WhatsAppBulk defaultBrand="SB" />
-      <section className="card section">
-        <h2>How it works</h2>
-        <ol className="steps">
-          <li>Choose the brand. Each brand has its own list and its own daily limit (Limits tab).</li>
-          <li>Upload a CSV or Excel file with a phone column. Everyone in it is added with WhatsApp consent = Yes; numbers already there, in Do Not Contact or repeated are skipped.</li>
-          <li>Click <b>Send next 30</b> as often as you like, up to the daily limit. Nobody gets the template twice.</li>
-          <li>Replies arrive in the <a href="/inbox">Inbox</a>.</li>
-        </ol>
-      </section>
-    </div>
-  );
 }
 
 // 10-digit numbers in the sheet are Indian numbers without the country code

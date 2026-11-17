@@ -445,3 +445,10 @@ td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
 a.card.choice { text-decoration: none; }
 .steps { margin: 6px 0 0; padding-left: 20px; line-height: 1.7; font-size: 14px; color: var(--text-secondary); }
 .steps a { color: var(--series-1); }
+
+/* Send WhatsApp: brand cards and brand page */
+.brand-logo { border-radius: 12px; object-fit: contain; background: #fff; border: 1px solid var(--border); flex: none; }
+.brand-logo.fallback { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; border: 0; }
+.brand-card .choice-head { align-items: center; }
+.brand-card .choice-head h2 { font-size: 16px; }
+.brand-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 10px 0 16px; }
