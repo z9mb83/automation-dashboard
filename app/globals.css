@@ -452,3 +452,33 @@ a.card.choice { text-decoration: none; }
 .brand-card .choice-head { align-items: center; }
 .brand-card .choice-head h2 { font-size: 16px; }
 .brand-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 10px 0 16px; }
+
+/* ===== Theme: blue + pastel pink (17 Nov 2026). Light theme only; dark theme keeps its own colours. ===== */
+:root {
+  --blue: #2f6fec; --blue-dark: #1b4fc0; --blue-soft: #e7efff;
+  --pink: #f4a9c6; --pink-soft: #fdeaf2; --pink-dark: #c2477a;
+  --page: #f4f7ff;
+  --border: rgba(47, 111, 236, 0.14);
+  --wash: rgba(47, 111, 236, 0.08);
+  --series-1: #2f6fec;
+  --meter-fill: #2f6fec;
+}
+:root:not([data-theme="dark"]) body { background: linear-gradient(160deg, #eef3ff 0%, #f6f4ff 45%, #fdeff5 100%) fixed; }
+:root:not([data-theme="dark"]) .top h1 {
+  background: linear-gradient(90deg, var(--blue-dark), var(--blue) 55%, var(--pink-dark));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+:root:not([data-theme="dark"]) .card { border-color: rgba(47, 111, 236, 0.12); box-shadow: 0 1px 3px rgba(47, 111, 236, 0.06); }
+:root:not([data-theme="dark"]) .card.tile.hero { background: linear-gradient(135deg, var(--blue-soft), var(--pink-soft)); border-color: rgba(244, 169, 198, 0.55); }
+:root:not([data-theme="dark"]) .choice:hover, :root:not([data-theme="dark"]) .choice:focus-visible { border-color: var(--pink); box-shadow: 0 4px 16px rgba(244, 169, 198, 0.35); }
+:root:not([data-theme="dark"]) .page-title { color: var(--blue-dark); }
+:root:not([data-theme="dark"]) .choice-ic { color: var(--pink-dark); }
+.main-nav .seg { background: var(--card); }
+.main-nav .seg button[aria-pressed="true"] { background: var(--blue); color: #fff; }
+:root:not([data-theme="dark"]) .seg button[aria-pressed="true"]:not(.main-nav *) { background: var(--pink-soft); color: var(--pink-dark); }
+:root:not([data-theme="dark"]) .btn-primary { background: linear-gradient(135deg, var(--blue), #5b8cff); box-shadow: 0 2px 8px rgba(47, 111, 236, 0.25); }
+:root:not([data-theme="dark"]) .btn-act { border-color: rgba(244, 169, 198, 0.8); }
+:root:not([data-theme="dark"]) .btn-act:hover { background: var(--pink-soft); }
+:root:not([data-theme="dark"]) .banner:not(.err) { border-left-color: var(--pink); }
+:root:not([data-theme="dark"]) .brand-logo { box-shadow: 0 2px 8px rgba(47, 111, 236, 0.12); }
+html, body { min-height: 100vh; }

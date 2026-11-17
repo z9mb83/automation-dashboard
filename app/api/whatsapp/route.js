@@ -29,23 +29,24 @@ export async function POST(req) {
     const type = req.headers.get('content-type') || '';
     if (type.includes('multipart/form-data')) {
       const form = await req.formData();
-      const brand = String(form.get('brand') || ''), file = form.get('file');
+      const brand = String(form.get('brand') || ''), file = form.get('file'), kind = form.get('kind') === 'mail' ? 'mail' : 'whatsapp';
       if (!okBrand(brand)) return json({ ok: false, message: 'Choose a brand.' }, 400);
       if (!file || typeof file.arrayBuffer !== 'function') return json({ ok: false, message: 'Choose a file.' }, 400);
       let parsed;
-      try { parsed = readUpload(file.name, await file.arrayBuffer()); } catch (e) { return json({ ok: false, message: String(e.message || e) }, 400); }
-      if (!parsed.items.length) return json({ ok: false, message: 'No phone number column found in the file.' }, 400);
-      const out = await callSheet('bulkadd', { brand, rows: parsed.items });
-      return json({ ...out, file: { rows: parsed.total, valid: parsed.valid, column: parsed.phoneHeader || `column ${parsed.phoneCol + 1}` } });
+      try { parsed = readUpload(file.name, await file.arrayBuffer(), kind); } catch (e) { return json({ ok: false, message: String(e.message || e) }, 400); }
+      if (!parsed.items.length) return json({ ok: false, message: kind === 'mail' ? 'No email column found in the file.' : 'No phone number column found in the file.' }, 400);
+      const out = await callSheet(kind === 'mail' ? 'mailbulkadd' : 'bulkadd', { brand, rows: parsed.items });
+      const col = kind === 'mail' ? parsed.emailHeader || `column ${parsed.emailCol + 1}` : parsed.phoneHeader || `column ${parsed.phoneCol + 1}`;
+      return json({ ...out, file: { rows: parsed.total, valid: parsed.valid, column: col } });
     }
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || ''), brand = String(body.brand || '');
-    if (action === 'brands') return json(await callSheet('brands', {}));
-    if (!['queue', 'sendnext', 'rowstatus'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
+    if (action === 'brands' || action === 'mailbrands') return json(await callSheet(action, {}));
+    if (!['queue', 'sendnext', 'rowstatus', 'mailqueue', 'mailsendnext', 'mailrowstatus'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
     if (!okBrand(brand)) return json({ ok: false, message: 'Choose a brand.' }, 400);
-    if (action === 'rowstatus') {
+    if (action === 'rowstatus' || action === 'mailrowstatus') {
       const rows = (Array.isArray(body.rows) ? body.rows : []).map(Number).filter((n) => n >= 3).slice(0, 20000);
-      return json(await callSheet('rowstatus', { brand, rows }));
+      return json(await callSheet(action, { brand, rows }));
     }
     return json(await callSheet(action, { brand, count: 30 }));
   } catch (e) {
