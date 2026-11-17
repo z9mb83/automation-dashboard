@@ -17,10 +17,12 @@ master sheet ──(read-only)──> common/Dashboard.gs web app (JSON, needs a
 ```
 
 ## Pages (since 17 Nov 2026)
-**Home** (today's numbers, what needs attention, big buttons) · **Send WhatsApp** (upload a phone list, Send next 30) ·
+**Home** (today's numbers, what needs attention, big buttons) · **Send WhatsApp** (one card per brand with its logo; a brand's
+page has upload, Send next 30, View analytics, and the last upload with each number's result and WhatsApp status) ·
 **Analytics** (Mail / WhatsApp / SMS charts and tables, with the 7/14/30-day and brand filters) · **Reports & costs**
 (Excel download, sending costs) · **Inbox** (top right). Old links still work: `#mail`, `#whatsapp`, `#sms` open Analytics,
-`#costs` opens Reports & costs.
+`#costs` opens Reports & costs, `#send/99S` opens a brand's send page. Logos: WhatsApp Setup tab > Header media URL
+(Drive files shared "Anyone with the link"), served through `/api/logo`.
 
 ## What it shows
 Emails sent today (and failures) · sent / replies / reply rate / WhatsApp for 7, 14 or 30 days ·

@@ -21,6 +21,8 @@ async function callSheet(action, fields) {
 // POST /api/whatsapp
 //   multipart form: brand + file (.csv / .xlsx)  -> numbers added to that brand (consent Yes)
 //   JSON {action: 'queue' | 'sendnext', brand}  -> waiting count / send the next 30 (daily cap from the Limits tab)
+//   JSON {action: 'brands'}                      -> brand cards (logo, template, waiting, sent today)
+//   JSON {action: 'rowstatus', brand, rows}      -> WhatsApp status of those brand-tab rows (upload results table)
 // Login is checked by middleware.js; the sheet key stays on the server.
 export async function POST(req) {
   try {
@@ -38,8 +40,13 @@ export async function POST(req) {
     }
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || ''), brand = String(body.brand || '');
-    if (!['queue', 'sendnext'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
+    if (action === 'brands') return json(await callSheet('brands', {}));
+    if (!['queue', 'sendnext', 'rowstatus'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
     if (!okBrand(brand)) return json({ ok: false, message: 'Choose a brand.' }, 400);
+    if (action === 'rowstatus') {
+      const rows = (Array.isArray(body.rows) ? body.rows : []).map(Number).filter((n) => n >= 3).slice(0, 20000);
+      return json(await callSheet('rowstatus', { brand, rows }));
+    }
     return json(await callSheet(action, { brand, count: 30 }));
   } catch (e) {
     return json({ ok: false, message: String(e.message || e).slice(0, 300) }, 502);
