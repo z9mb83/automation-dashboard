@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BRANDS, brandVar } from '../lib/brands';
 import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '../components/charts';
 import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
+import { WhatsAppBulk } from '../components/wa-bulk';
 import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
 import { SmsChoice, SmsView } from '../components/sms';
@@ -310,6 +311,7 @@ export default function Dashboard() {
           <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (read-only). Times are India time.</p>
         </div>
       ) : null}
+      {view && page === 'whatsapp' ? <WhatsAppBulk defaultBrand={brand} /> : null}
       {view ? <ReportCard defaultType={page === 'home' ? 'combined' : page} defaultBrand={page === 'home' ? 'ALL' : brand} /> : null}
       {!view && !error ? <p className="muted">Loading…</p> : null}
     </div>
