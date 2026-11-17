@@ -20,7 +20,7 @@ const PIPE_SLICES = [
   { key: 'toDraft', label: 'New (no draft yet)', color: 'var(--axis)' },
 ];
 const REFRESH_MS = 60000;
-const PAGES = ['send', 'reports', 'mail', 'whatsapp', 'sms'];
+const PAGES = ['send', 'email', 'reports', 'mail', 'whatsapp', 'sms'];
 const ANALYTICS = ['mail', 'whatsapp', 'sms'];
 const WA_STAGES = [
   { key: 'read', label: 'Read', color: 'var(--good)' },
@@ -77,7 +77,7 @@ export default function Dashboard() {
       const h = window.location.hash.replace('#', '');
       // pages: home · send · analytics (mail / whatsapp / sms) · reports (costs live on the reports page)
       const [p0, sub] = h.split('/');
-      setSendBrand(p0 === 'send' && BRANDS.some((b) => b.code === sub) ? sub : '');
+      setSendBrand((p0 === 'send' || p0 === 'email') && BRANDS.some((b) => b.code === sub) ? sub : '');
       setPage(PAGES.includes(p0) ? p0 : p0 === 'analytics' ? 'whatsapp' : p0 === 'costs' ? 'reports' : 'home');
       if (h === 'costs') {   // costs section loads after the page: wait for it, then scroll to it
         let tries = 0;
@@ -90,7 +90,9 @@ export default function Dashboard() {
   }, []);
   const go = (p) => { window.location.hash = p === 'home' ? '' : p; setPage(p); setSendBrand(''); if (p === 'home') setBrand('ALL'); window.scrollTo(0, 0); };
   const openSend = (code) => { window.location.hash = 'send/' + code; setPage('send'); setSendBrand(code); window.scrollTo(0, 0); };
+  const openEmail = (code) => { window.location.hash = 'email/' + code; setPage('email'); setSendBrand(code); window.scrollTo(0, 0); };
   const brandAnalytics = (code) => { setBrand(code); go('whatsapp'); };
+  const brandMailAnalytics = (code) => { setBrand(code); go('mail'); };
   const isAnalytics = ANALYTICS.includes(page);
 
   const load = useCallback(async () => {
@@ -194,7 +196,7 @@ export default function Dashboard() {
         <div className="seg">
           <button aria-pressed={page === 'home'} onClick={() => go('home')}>Home</button>
           <button aria-pressed={page === 'send'} onClick={() => go('send')}>Send WhatsApp</button>
-          <button aria-pressed={isAnalytics} onClick={() => go(isAnalytics ? page : 'whatsapp')}>Analytics</button>
+          <button aria-pressed={page === 'email'} onClick={() => go('email')}>Send Email</button>
           <button aria-pressed={page === 'reports'} onClick={() => go('reports')}>Reports &amp; costs</button>
         </div>
       </nav>
@@ -227,8 +229,10 @@ export default function Dashboard() {
 
       {view && page === 'home' ? <Home view={view} go={go} /> : null}
       {view && page === 'sms' ? <SmsView range={range} brand={brand} /> : null}
-      {view && page === 'send' && !sendBrand ? <SendLanding open={openSend} /> : null}
+      {view && page === 'send' && !sendBrand ? <SendLanding open={openSend} data={data} /> : null}
       {view && page === 'send' && sendBrand ? <SendBrand code={sendBrand} data={data} back={() => go('send')} analytics={brandAnalytics} /> : null}
+      {view && page === 'email' && !sendBrand ? <SendLanding kind="mail" open={openEmail} data={data} /> : null}
+      {view && page === 'email' && sendBrand ? <SendBrand kind="mail" code={sendBrand} data={data} back={() => go('email')} analytics={brandMailAnalytics} /> : null}
       {view && page === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" /><CostSection /></div> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
@@ -394,6 +398,7 @@ function Home({ view, go }) {
       <div className="grid three">
         <ActionCard icon={<ChatIcon />} title="Send WhatsApp" text="Upload a phone list for a brand, then send to the next 30 numbers." onClick={() => go('send')} />
         <ActionCard icon={<ChatIcon />} title="Inbox" text="Read and answer WhatsApp chats from customers." href="/inbox" />
+        <ActionCard icon={<MailIcon />} title="Send Email" text="Upload an email list for a brand, then send AI-written emails to the next 25." onClick={() => go('email')} />
         <ActionCard icon={<MailIcon />} title="Email replies" text="Leads who answered our emails, with a link to the Gmail thread." onClick={() => go('mail')} />
         <ActionCard icon={<ReportIcon />} title="Reports & costs" text="Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost." onClick={() => go('reports')} />
         <ActionCard icon={<ChartIcon />} title="Analytics" text="Charts and trends: sends, replies, delivery, pipeline, mailboxes." onClick={() => go('whatsapp')} />
