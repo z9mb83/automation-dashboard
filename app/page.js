@@ -210,6 +210,7 @@ export default function Dashboard() {
 
       {view && page === 'home' ? <Home view={view} data={data} go={go} /> : null}
       {view && page === 'sms' ? <SmsView range={range} brand={brand} /> : null}
+      {view && page === 'whatsapp' ? <WhatsAppBulk defaultBrand={brand} /> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
         <div className={loading && manual ? 'stale' : ''}>
@@ -311,7 +312,6 @@ export default function Dashboard() {
           <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>Source: Automation Control Center sheet (read-only). Times are India time.</p>
         </div>
       ) : null}
-      {view && page === 'whatsapp' ? <WhatsAppBulk defaultBrand={brand} /> : null}
       {view ? <ReportCard defaultType={page === 'home' ? 'combined' : page} defaultBrand={page === 'home' ? 'ALL' : brand} /> : null}
       {!view && !error ? <p className="muted">Loading…</p> : null}
     </div>
