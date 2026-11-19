@@ -3,10 +3,11 @@
 Live, password-protected dashboard for the **Automation Control Center** sheet
 (mail + WhatsApp for Shaadi Bells, 99 Marketing, 99 Staffing, Property Experts, Skyline Capital).
 
-**Live: https://automation-dashboard-sigma-rose.vercel.app** (Vercel project `automation-dashboard`, team 99Marketing, Hobby plan).
+**Live: https://automation-dashboard-pi-ten.vercel.app** (Vercel project `automation-dashboard`, team ACE, Hobby plan, built from `z9mb83/automation-dashboard`).
+The old address https://automation-dashboard-sigma-rose.vercel.app (old Vercel account) is retired.
 
 It only **reads** data. The sending tools live in the other repo,
-[`unified-communication-automation`](https://github.com/linkwithmarketing-design/unified-communication-automation);
+[`unified-communication-automation`](https://github.com/z9mb83/unified-communication-automation);
 a problem here can never stop mail or WhatsApp.
 
 ```
@@ -20,6 +21,8 @@ master sheet ──(read-only)──> common/Dashboard.gs web app (JSON, needs a
 **Home** (today's numbers, what needs attention, big buttons) · **Send WhatsApp** (one card per brand with its logo; a brand's
 page has upload, Send next 30, View analytics, and the last upload with each number's result and WhatsApp status) ·
 **Send Email** (same as WhatsApp for email lists: upload, Send next 25 queues AI-written emails through the mail sender) ·
+**Send SMS** (since 19 Nov 2026: Shaadi Bells and Property Experts, the two newspaper-ad OCR sheets; **Send next 100** runs the sheet's own
+Send Next 100 through its web app `SmsApi.gs` (OCR repo): already-texted, DND and not-in-use numbers are skipped, only 9 AM - 9 PM, never in Dry run) ·
 **Analytics** (no menu tab: Home card or a brand's View analytics; Mail / WhatsApp / SMS charts and tables) · **Reports & costs**
 (Excel download, sending costs) · **Inbox** (top right). Old links still work: `#mail`, `#whatsapp`, `#sms` open Analytics,
 `#costs` opens Reports & costs, `#send/99S` opens a brand's send page. Logos: WhatsApp Setup tab > Header media URL
@@ -49,6 +52,8 @@ Pages and buttons:
 | `SHEET_API_KEY` | Sheet menu **AUTOMATION → Dashboard → Create access key** (shown once) |
 | `DASHBOARD_PASSWORD` | Any password you choose; people type it to open the dashboard |
 | `TELINFY_API_KEY` | Telinfy (username `99consulting`) → Developer / API key. Only for the SMS page; stays on the server |
+| `SMS_SB_URL` / `SMS_PE_URL` | Send SMS page: the `/exec` link of the Shaadi OCR / Property sheet's web app (Apps Script → Deploy → Manage deployments) |
+| `SMS_SB_KEY` / `SMS_PE_KEY` | Send SMS page: in that sheet, menu **SMS → Dashboard access key** (shown once) |
 
 Without `SHEET_API_URL`/`SHEET_API_KEY` the page shows clearly-labelled **sample data**.
 Changing the password or key signs everyone out.
@@ -68,6 +73,8 @@ Already set up (29 Sep 2026). For reference / to rebuild from scratch:
 |---|---|---|
 | "feed: unauthorized ... (N characters; a sheet key has 64)" | Key in Vercel ≠ key in sheet (on 29 Sep a 114-character value had been pasted): create a new key, paste exactly the 64 characters into `SHEET_API_KEY`, Redeploy | sheet menu / `SHEET_API_KEY` |
 | Setting changed but no effect | Redeploy (see Deploying, step 5) | Vercel |
+| Send SMS card: "Not connected yet" / "refused the key" / "did not answer" | Add or fix `SMS_SB_*` / `SMS_PE_*` (link must end in `/exec`, web app access "Anyone"; key from the sheet's **SMS → Dashboard access key**), Redeploy | Vercel settings, OCR repo `src/SmsApi.gs` |
+| Send SMS button greyed out | Card says why: Dry run mode (sheet **SMS → Mode**), outside 9 AM - 9 PM, or nothing left to text | OCR sheet |
 | Deployment shows `Canceled` | It was stopped before finishing - Redeploy and let it run (~1 minute) | Vercel |
 | "feed did not return JSON" | Web app not deployed with access **Anyone**, or wrong URL | `common/Dashboard.gs` deployment |
 | "snapshot failed: …" | A tab was renamed/removed; run **Set up / repair tabs** | `common/Dashboard.gs` (`dbSnapshot_`) |

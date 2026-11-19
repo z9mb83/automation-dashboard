@@ -4,6 +4,7 @@ import { BRANDS, brandVar } from '../lib/brands';
 import { ChartCard, Donut, HBars, Legend, StackedColumns, dayLabel, fmt } from '../components/charts';
 import { brandSummary, deliverySummary, perDaySummary, pipelineSummary } from '../lib/summary';
 import { SendBrand, SendLanding } from '../components/wa-send';
+import { SmsSend } from '../components/sms-send';
 import { ReportCard } from '../components/report';
 import { InboxButton } from '../components/inbox-button';
 import { SmsView } from '../components/sms';
@@ -20,7 +21,7 @@ const PIPE_SLICES = [
   { key: 'toDraft', label: 'New (no draft yet)', color: 'var(--axis)' },
 ];
 const REFRESH_MS = 60000;
-const PAGES = ['send', 'email', 'reports', 'mail', 'whatsapp', 'sms'];
+const PAGES = ['send', 'email', 'send-sms', 'reports', 'mail', 'whatsapp', 'sms'];
 const ANALYTICS = ['mail', 'whatsapp', 'sms'];
 const WA_STAGES = [
   { key: 'read', label: 'Read', color: 'var(--good)' },
@@ -197,6 +198,7 @@ export default function Dashboard() {
           <button aria-pressed={page === 'home'} onClick={() => go('home')}>Home</button>
           <button aria-pressed={page === 'send'} onClick={() => go('send')}>Send WhatsApp</button>
           <button aria-pressed={page === 'email'} onClick={() => go('email')}>Send Email</button>
+          <button aria-pressed={page === 'send-sms'} onClick={() => go('send-sms')}>Send SMS</button>
           <button aria-pressed={page === 'reports'} onClick={() => go('reports')}>Reports &amp; costs</button>
         </div>
       </nav>
@@ -233,6 +235,7 @@ export default function Dashboard() {
       {view && page === 'send' && sendBrand ? <SendBrand code={sendBrand} data={data} back={() => go('send')} analytics={brandAnalytics} /> : null}
       {view && page === 'email' && !sendBrand ? <SendLanding kind="mail" open={openEmail} data={data} /> : null}
       {view && page === 'email' && sendBrand ? <SendBrand kind="mail" code={sendBrand} data={data} back={() => go('email')} analytics={brandMailAnalytics} /> : null}
+      {view && page === 'send-sms' ? <SmsSend /> : null}
       {view && page === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" /><CostSection /></div> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
@@ -399,6 +402,7 @@ function Home({ view, go }) {
         <ActionCard icon={<ChatIcon />} title="Send WhatsApp" text="Upload a phone list for a brand, then send to the next 30 numbers." onClick={() => go('send')} />
         <ActionCard icon={<ChatIcon />} title="Inbox" text="Read and answer WhatsApp chats from customers." href="/inbox" />
         <ActionCard icon={<MailIcon />} title="Send Email" text="Upload an email list for a brand, then send AI-written emails to the next 25." onClick={() => go('email')} />
+        <ActionCard icon={<ChatIcon />} title="Send SMS" text="Text the next 100 numbers from the newspaper-ad sheets (Shaadi Bells, Property Experts)." onClick={() => go('send-sms')} />
         <ActionCard icon={<MailIcon />} title="Email replies" text="Leads who answered our emails, with a link to the Gmail thread." onClick={() => go('mail')} />
         <ActionCard icon={<ReportIcon />} title="Reports & costs" text="Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost." onClick={() => go('reports')} />
         <ActionCard icon={<ChartIcon />} title="Analytics" text="Charts and trends: sends, replies, delivery, pipeline, mailboxes." onClick={() => go('whatsapp')} />

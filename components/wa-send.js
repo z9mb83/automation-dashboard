@@ -9,7 +9,7 @@ const mailRoom = (data, code) => (data && data.mailboxes || []).filter((m) => m.
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
 
-function Logo({ b, size = 56 }) {
+export function Logo({ b, size = 56 }) {
   const [bad, setBad] = useState(false);
   const src = b && b.logoId ? `/api/logo?id=${encodeURIComponent(b.logoId)}` : b && b.logoUrl ? b.logoUrl : '';
   const meta = BRANDS.find((x) => x.code === (b && b.code));
