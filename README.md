@@ -3,10 +3,11 @@
 Live, password-protected dashboard for the **Automation Control Center** sheet
 (mail + WhatsApp for Shaadi Bells, 99 Marketing, 99 Staffing, Property Experts, Skyline Capital).
 
-**Live: https://automation-dashboard-sigma-rose.vercel.app** (Vercel project `automation-dashboard`, team 99Marketing, Hobby plan).
+**Live: https://automation-dashboard-pi-ten.vercel.app** (Vercel project `automation-dashboard`, team ACE, Hobby plan, built from `z9mb83/automation-dashboard`).
+The old address https://automation-dashboard-sigma-rose.vercel.app (old Vercel account) is retired.
 
 It only **reads** data. The sending tools live in the other repo,
-[`unified-communication-automation`](https://github.com/linkwithmarketing-design/unified-communication-automation);
+[`unified-communication-automation`](https://github.com/z9mb83/unified-communication-automation);
 a problem here can never stop mail or WhatsApp.
 
 ```

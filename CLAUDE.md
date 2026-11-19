@@ -22,9 +22,10 @@ brand pages, not the top menu) · `/inbox` WhatsApp-style inbox · `/login`.
 Without the sheet variables the page shows clearly-labelled sample data.
 
 ## Where it runs
-- Old: `https://automation-dashboard-sigma-rose.vercel.app` (Vercel account linked to linkwithmarketing-design).
-- 19 Nov 2026: repo copied to GitHub **z9mb83**; a new Vercel project is set up from `z9mb83/automation-dashboard` with the
-  same four variables. The old one keeps working until it is deleted.
+- **Live: `https://automation-dashboard-pi-ten.vercel.app`** - Vercel team ACE (Hobby), project `automation-dashboard`, built from `z9mb83/automation-dashboard`
+  (set up 19 Nov 2026 with the same four variables; every push to `main` redeploys).
+- Old: `https://automation-dashboard-sigma-rose.vercel.app` (old Vercel account, old `linkwithmarketing-design` repo) - retired.
+- The sheet links to the dashboard at the top of its **Dashboard** tab and in **Settings** ("Web dashboard").
 
 ## Code map
 - `app/api/*/route.js` - server routes. `whatsapp/route.js` handles uploads (multipart, `kind` = whatsapp → `bulkadd`,
