@@ -1,44 +1,50 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { can, pathAllowed, inboxActionAllowed, whatsappActionAllowed, inboxForRole, maskPhone, maskEmail, maskName, maskDeep, dataForRole, smsForRole, HIDDEN } from '../lib/roles.js';
+import { can, pathAllowed, inboxActionAllowed, whatsappActionAllowed, smsActionAllowed, inboxForRole, maskPhone, maskEmail, maskName, maskDeep, dataForRole, smsForRole, HIDDEN } from '../lib/roles.js';
 import { loginRole, roleForPassword, tokenFor, roleOf } from '../lib/auth.js';
 import { sampleSnapshot, sampleInbox, sampleMailThreads } from '../lib/sample.js';
 import { smsReportSheets } from '../lib/sms.js';
 
-test('owner sees money and sends; admin reads, replies, downloads; viewer only analytics', () => {
-  assert.ok(can('owner', 'money') && can('owner', 'send'));
-  assert.ok(!can('admin', 'money') && !can('admin', 'send') && can('admin', 'reply') && can('admin', 'reports'));
+test('owner: read-only results and money; admin: runs everything without money; viewer: analytics', () => {
+  assert.ok(can('owner', 'money') && can('owner', 'templates') && can('owner', 'inbox'));
+  assert.ok(!can('owner', 'send') && !can('owner', 'reply') && !can('owner', 'reports') && !can('owner', 'status'));
+  assert.ok(can('admin', 'send') && can('admin', 'reply') && can('admin', 'reports') && can('admin', 'status') && can('admin', 'allChats'));
+  assert.ok(!can('admin', 'money'));
   assert.ok(!can('viewer', 'inbox') && !can('viewer', 'reports') && !can('viewer', 'money') && can('viewer', 'analytics'));
   assert.ok(!can('', 'analytics'));
 });
 
 test('pages and API routes per login', () => {
   const ok = (r, m, p) => pathAllowed(r, m, p);
-  for (const p of ['/api/costs', '/api/sms-send', '/api/inbox', '/api/report', '/inbox']) assert.ok(ok('owner', 'GET', p), p);
-  assert.ok(!ok('admin', 'GET', '/api/costs') && !ok('admin', 'POST', '/api/sms-send'));
-  assert.ok(ok('admin', 'GET', '/inbox') && ok('admin', 'POST', '/api/inbox') && ok('admin', 'GET', '/api/report') && ok('admin', 'POST', '/api/mail'));
+  // owner: inbox read-only, costs, SMS status (templates); no report downloads, no inbox actions
+  assert.ok(ok('owner', 'GET', '/inbox') && ok('owner', 'GET', '/api/inbox') && ok('owner', 'GET', '/api/costs') && ok('owner', 'POST', '/api/sms-send'));
+  assert.ok(!ok('owner', 'POST', '/api/inbox') && !ok('owner', 'GET', '/api/report') && !ok('owner', 'POST', '/api/mail'));
+  // admin: everything except costs
+  for (const [m, p] of [['GET', '/inbox'], ['POST', '/api/inbox'], ['GET', '/api/report'], ['POST', '/api/mail'], ['POST', '/api/sms-send'], ['POST', '/api/whatsapp']]) assert.ok(ok('admin', m, p), p);
+  assert.ok(!ok('admin', 'GET', '/api/costs'));
+  // viewer
   for (const p of ['/inbox', '/api/inbox', '/api/report', '/api/costs', '/api/sms-send']) assert.ok(!ok('viewer', 'GET', p), p);
   assert.ok(!ok('viewer', 'POST', '/api/mail') && ok('viewer', 'GET', '/api/mail'));
   assert.ok(ok('viewer', 'GET', '/') && ok('viewer', 'GET', '/api/data') && ok('viewer', 'GET', '/api/sms'));
-  assert.ok(!ok('viewer', 'GET', '/api/something-new') && !ok('', 'GET', '/'));
+  assert.ok(!ok('viewer', 'GET', '/api/something-new') && !ok('owner', 'GET', '/api/something-new') && ok('admin', 'GET', '/api/something-new') && !ok('', 'GET', '/'));
 });
 
-test('inbox and WhatsApp actions', () => {
-  assert.ok(inboxActionAllowed('admin', 'reply') && inboxActionAllowed('admin', 'optout'));
-  assert.ok(!inboxActionAllowed('admin', 'send') && !inboxActionAllowed('admin', 'add') && !inboxActionAllowed('viewer', 'reply'));
-  assert.ok(inboxActionAllowed('owner', 'add'));
-  assert.ok(whatsappActionAllowed('viewer', 'brands') && !whatsappActionAllowed('admin', 'sendnext') && !whatsappActionAllowed('admin', 'upload'));
-  assert.ok(whatsappActionAllowed('owner', 'sendnext'));
+test('inbox, WhatsApp and SMS actions', () => {
+  for (const a of ['reply', 'optout', 'add', 'send']) { assert.ok(inboxActionAllowed('admin', a), a); assert.ok(!inboxActionAllowed('owner', a), a); assert.ok(!inboxActionAllowed('viewer', a), a); }
+  assert.ok(whatsappActionAllowed('owner', 'brands') && whatsappActionAllowed('viewer', 'brands'));
+  assert.ok(!whatsappActionAllowed('owner', 'sendnext') && !whatsappActionAllowed('owner', 'upload') && whatsappActionAllowed('admin', 'sendnext'));
+  assert.ok(smsActionAllowed('owner', 'status') && !smsActionAllowed('owner', 'sendnext') && !smsActionAllowed('owner', 'upload'));
+  assert.ok(smsActionAllowed('admin', 'sendnext') && smsActionAllowed('admin', 'upload') && !smsActionAllowed('viewer', 'status'));
 });
 
-test('admin inbox keeps only people who wrote to us', () => {
+test('owner inbox keeps only people who wrote to us; admin sees every chat', () => {
   const d = { chats: [{ id: 'a' }, { id: 'b' }, { id: 'c', lastInTime: '2026-11-26 10:00' }],
     messages: [{ chat: 'a', dir: 'out' }, { chat: 'b', dir: 'out' }, { chat: 'b', dir: 'in' }] };
-  const a = inboxForRole(d, 'admin');
-  assert.deepEqual(a.chats.map((c) => c.id), ['b', 'c']);
-  assert.ok(a.messages.every((m) => m.chat === 'b'));
-  assert.equal(inboxForRole(d, 'owner'), d);
-  const s = inboxForRole(sampleInbox(), 'admin');
+  const o = inboxForRole(d, 'owner');
+  assert.deepEqual(o.chats.map((c) => c.id), ['b', 'c']);
+  assert.ok(o.messages.every((m) => m.chat === 'b'));
+  assert.equal(inboxForRole(d, 'admin'), d);
+  const s = inboxForRole(sampleInbox(), 'owner');
   assert.ok(s.chats.length > 0 && s.chats.every((c) => s.messages.some((m) => m.chat === c.id && m.dir === 'in') || c.lastInTime));
 });
 
