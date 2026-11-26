@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { BRANDS, brandVar } from '../lib/brands';
+import { TemplateLink } from './template-preview';
 
 /**
  * Admin (Home page): what is switched on right now. The owner gets TemplatesInUse instead.
@@ -35,14 +36,14 @@ export function TemplatesInUse({ data }) {
   return (
     <section className="card section status-panel" id="templates">
       <h2>Templates in use</h2>
-      <p className="sub">The messages customers receive. Sending is run by the admin.</p>
+      <p className="sub">The messages customers receive: click a WhatsApp template to see how it looks. Sending is run by the admin.</p>
       <h3>WhatsApp</h3>
       <div className="tablewrap"><table className="stack">
         <thead><tr><th>Brand</th><th>WhatsApp</th><th>Template</th><th className="r">Sent today</th></tr></thead>
         <tbody>{BRANDS.map((b) => {
           const row = data.brands.find((x) => x.code === b.code) || {}, c = waCards[b.code] || {};
           return <tr key={b.code}><td>{brandCell(b.code)}</td><td>{onOff(c.on !== undefined ? c.on : row.waOn)}</td>
-            <td>{wa ? (c.template || <span className="muted">none</span>) : '…'}</td><td className="r">{c.sentToday ?? '–'}</td></tr>;
+            <td>{wa ? <TemplateLink code={b.code} name={c.template} logo={c} /> : '…'}</td><td className="r">{c.sentToday ?? '–'}</td></tr>;
         })}</tbody></table></div>
       {wa && wa.error ? <p className="err">{wa.error}</p> : null}
       <h3>SMS</h3>
@@ -77,7 +78,7 @@ export function SendingStatus({ data, mailboxStatus }) {
         <tbody>{BRANDS.map((b) => {
           const row = data.brands.find((x) => x.code === b.code) || {}, c = waCards[b.code] || {};
           return <tr key={b.code}><td>{brandCell(b.code)}</td><td>{onOff(c.on !== undefined ? c.on : row.waOn)}</td>
-            <td>{wa ? (c.template || <span className="muted">none</span>) : '…'}</td>
+            <td>{wa ? <TemplateLink code={b.code} name={c.template} logo={c} /> : '…'}</td>
             <td className="r">{c.sentToday ?? '–'}</td><td className="r">{c.perDay || '–'}</td><td className="r">{c.waiting ?? '–'}</td></tr>;
         })}</tbody></table></div>
       {wa && wa.error ? <p className="err">Templates: {wa.error}</p> : null}

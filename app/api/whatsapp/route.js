@@ -46,6 +46,7 @@ export async function POST(req) {
     const action = String(body.action || ''), brand = String(body.brand || '');
     if (!whatsappActionAllowed(role, action)) return json({ ok: false, message: 'Only the owner can send.' }, 403);
     if (action === 'brands' || action === 'mailbrands') return json(await callSheet(action, {}));
+    if (action === 'templates') return json(await callSheet('templates', { fresh: !!body.fresh }));   // template preview (read-only)
     if (!['queue', 'sendnext', 'rowstatus', 'mailqueue', 'mailsendnext', 'mailrowstatus'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
     if (!okBrand(brand)) return json({ ok: false, message: 'Choose a brand.' }, 400);
     if (action === 'rowstatus' || action === 'mailrowstatus') {
