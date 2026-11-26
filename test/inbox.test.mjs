@@ -93,3 +93,19 @@ test('24-hour reply window: countdown levels and the Needs reply queue', () => {
   assert.ok(!needsReply(chats[5], msgs, now));              // opted out
   assert.deepEqual(replyQueue(chats, msgs, now).map((c) => c.id), ['2', '1']);   // least time left first
 });
+
+test('brand tabs: chats, unread and needs-reply counted per brand and in total', async () => {
+  const { brandCounts, pickBrand } = await import('../lib/inbox.js');
+  const now = Date.UTC(2026, 9, 23, 6, 0) ; // 23 Oct 11:30 India time: SB replied at 09:00 the same day
+  const c = brandCounts(chats, messages, { brands: ['SB', '99M', '99S', 'PE', 'SC'], nowMs: now });
+  assert.deepEqual(c.ALL, { chats: 3, unread: 2, needs: 1 });
+  assert.deepEqual(c.SB, { chats: 1, unread: 1, needs: 1 });
+  assert.deepEqual(c['99M'], { chats: 1, unread: 1, needs: 0 });
+  assert.deepEqual(c.PE, { chats: 1, unread: 0, needs: 0 });
+  assert.deepEqual(c.SC, { chats: 0, unread: 0, needs: 0 });
+  const seen = { 'SB|919811122233': '2026-10-23 09:00:00' };
+  assert.equal(brandCounts(chats, messages, { brands: ['SB'], lastSeen: seen, nowMs: now }).SB.unread, 0);
+  assert.equal(pickBrand('sb', ['SB', 'PE']), 'SB');
+  assert.equal(pickBrand('XX', ['SB', 'PE']), 'ALL');
+  assert.equal(pickBrand('', ['SB']), 'ALL');
+});
