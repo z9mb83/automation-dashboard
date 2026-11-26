@@ -11,7 +11,7 @@ import { SmsView } from '../components/sms';
 import { MailReplies, useMailWaiting } from '../components/mail-replies';
 import { CostButton, CostSection } from '../components/costs';
 import { ROLE_LABEL, can } from '../lib/roles';
-import { SendingStatus } from '../components/status';
+import { SendingStatus, TemplatesInUse } from '../components/status';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -50,6 +50,9 @@ const Icon = ({ kind }) => (
       : <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="8" cy="8" r="6.2" /><path d="M5.8 5.8l4.4 4.4M10.2 5.8l-4.4 4.4" /></g>}
   </svg>
 );
+
+// Reports tab: admin downloads reports, the owner sees costs (no downloads)
+const reportsLabel = (role) => (can(role, 'reports') && can(role, 'money') ? 'Reports & costs' : can(role, 'money') ? 'Costs' : 'Reports');
 
 function mailboxStatus(m) {
   if (/invalid_grant|authentication repair/i.test(m.lastResult)) return { kind: 'bad', label: 'Needs reconnect' };
@@ -99,7 +102,7 @@ export default function Dashboard() {
   const isAnalytics = ANALYTICS.includes(page);
   // which login this is (owner / admin / viewer, from the server); the server also refuses what a login may not do
   const role = data?.role || '';
-  const mayPage = (p) => (['send', 'email', 'send-sms'].includes(p) ? can(role, 'send') : p === 'reports' ? can(role, 'reports') : true);
+  const mayPage = (p) => (['send', 'email', 'send-sms'].includes(p) ? can(role, 'send') : p === 'reports' ? can(role, 'reports') || can(role, 'money') : true);
   const shown = !role || mayPage(page) ? page : 'home';
 
   const load = useCallback(async () => {
@@ -209,7 +212,7 @@ export default function Dashboard() {
             <button aria-pressed={shown === 'email'} onClick={() => go('email')}>Send Email</button>
             <button aria-pressed={shown === 'send-sms'} onClick={() => go('send-sms')}>Send SMS</button>
           </> : <button aria-pressed={isAnalytics} onClick={() => go('whatsapp')}>Analytics</button>}
-          {can(role, 'reports') ? <button aria-pressed={shown === 'reports'} onClick={() => go('reports')}>{can(role, 'money') ? <>Reports &amp; costs</> : 'Reports'}</button> : null}
+          {can(role, 'reports') || can(role, 'money') ? <button aria-pressed={shown === 'reports'} onClick={() => go('reports')}>{reportsLabel(role)}</button> : null}
         </div>
       </nav>
 
@@ -246,7 +249,7 @@ export default function Dashboard() {
       {view && shown === 'email' && !sendBrand ? <SendLanding kind="mail" open={openEmail} data={data} /> : null}
       {view && shown === 'email' && sendBrand ? <SendBrand kind="mail" code={sendBrand} data={data} back={() => go('email')} analytics={brandMailAnalytics} /> : null}
       {view && shown === 'send-sms' ? <SmsSend /> : null}
-      {view && shown === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" />{can(role, 'money') ? <CostSection /> : null}</div> : null}
+      {view && shown === 'reports' ? <div>{can(role, 'reports') ? <ReportCard defaultType="combined" defaultBrand="ALL" /> : null}{can(role, 'money') ? <CostSection /> : null}</div> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
         <div className={loading && manual ? 'stale' : ''}>
@@ -410,14 +413,14 @@ function Home({ view, go, role, data }) {
       <h2 className="page-title" style={{ marginTop: 22 }}>What do you want to do?</h2>
       <div className="grid three">
         {can(role, 'send') ? <ActionCard icon={<ChatIcon />} title="Send WhatsApp" text="Upload a phone list for a brand, then send to the next 30 numbers." onClick={() => go('send')} /> : null}
-        {can(role, 'inbox') ? <ActionCard icon={<ChatIcon />} title="Inbox" text={can(role, 'send') ? 'Read and answer WhatsApp chats from customers.' : 'Read and answer the people who replied on WhatsApp.'} href="/inbox" /> : null}
+        {can(role, 'inbox') ? <ActionCard icon={<ChatIcon />} title="Inbox" text={can(role, 'reply') ? 'Every WhatsApp chat: read and answer customers.' : 'Read the WhatsApp replies from customers.'} href="/inbox" /> : null}
         {can(role, 'send') ? <ActionCard icon={<MailIcon />} title="Send Email" text="Upload an email list for a brand, then send AI-written emails to the next 25." onClick={() => go('email')} /> : null}
         {can(role, 'send') ? <ActionCard icon={<ChatIcon />} title="Send SMS" text="Text the next 100 numbers from the newspaper-ad sheets (Shaadi Bells, Property Experts)." onClick={() => go('send-sms')} /> : null}
         <ActionCard icon={<MailIcon />} title="Email replies" text={role === 'viewer' ? 'How many leads answered our emails, per brand.' : 'Leads who answered our emails, with a link to the Gmail thread.'} onClick={() => go('mail')} />
-        {can(role, 'reports') ? <ActionCard icon={<ReportIcon />} title={can(role, 'money') ? 'Reports & costs' : 'Reports'} text={can(role, 'money') ? 'Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost.' : 'Download Excel reports (Mail, WhatsApp, SMS).'} onClick={() => go('reports')} /> : null}
+        {can(role, 'reports') || can(role, 'money') ? <ActionCard icon={<ReportIcon />} title={reportsLabel(role)} text={can(role, 'reports') && can(role, 'money') ? 'Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost.' : can(role, 'money') ? 'What sending has cost, by brand and month.' : 'Download Excel reports (Mail, WhatsApp, SMS).'} onClick={() => go('reports')} /> : null}
         <ActionCard icon={<ChartIcon />} title="Analytics" text="Charts and trends: sends, replies, delivery, pipeline, mailboxes." onClick={() => go('whatsapp')} />
       </div>
-      {role === 'owner' ? <SendingStatus data={data} mailboxStatus={mailboxStatus} /> : null}
+      {can(role, 'status') ? <SendingStatus data={data} mailboxStatus={mailboxStatus} /> : can(role, 'templates') ? <TemplatesInUse data={data} /> : null}
     </div>
   );
 }
