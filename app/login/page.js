@@ -3,8 +3,8 @@ export const metadata = { title: 'Sign in · Automation Dashboard' };
 // Pick who you are: Owner (owner password), Admin (admin password) or Viewer (no password).
 // Each password works only on its own card. Plain HTML forms, no script needed.
 const ROLES = [
-  { as: 'owner', title: 'Owner', text: 'Everything: sending, uploads, inbox, costs and what is switched on.' },
-  { as: 'admin', title: 'Admin', text: 'Analytics, report downloads and the inbox of people who replied. No costs, no sending.' },
+  { as: 'owner', title: 'Owner', text: 'Results: replies, numbers sent, templates in use and costs. Read-only.' },
+  { as: 'admin', title: 'Admin', text: 'Runs the outreach: uploads, sending, every chat, reports and what is switched on. No costs.' },
   { as: 'viewer', title: 'Viewer', text: 'Analytics only, with names, phone numbers, emails and messages hidden. No password.' },
 ];
 
