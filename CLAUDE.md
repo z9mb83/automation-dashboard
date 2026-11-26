@@ -158,3 +158,4 @@ Most logic runs in **Google Apps Script**, which is not connected to git. The us
   Needs the OCR projects' `SmsApi.gs` with `bulkadd` deployed as a new version of the same web app.
 - Logins: owner / admin / viewer (`lib/roles.js`, `lib/auth.js`, `middleware.js` sets `x-dash-role` for the routes). New Vercel setting `ADMIN_PASSWORD` (owner types it).
   Owner Home panel `components/status.js` (needs the OCR `SmsApi.gs` status with `auto` / `autoLast` / template fields).
+- Roles re-cut 26 Nov 2026 (owner's request): owner = read-only results + costs (replies-only inbox, templates, no actions); admin = operator without money (all sending, uploads, all chats, downloads, status panel). `lib/roles.js` CAPS.
