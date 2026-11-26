@@ -32,6 +32,7 @@ test('pages and API routes per login', () => {
 test('inbox, WhatsApp and SMS actions', () => {
   for (const a of ['reply', 'optout', 'add', 'send']) { assert.ok(inboxActionAllowed('admin', a), a); assert.ok(!inboxActionAllowed('owner', a), a); assert.ok(!inboxActionAllowed('viewer', a), a); }
   assert.ok(whatsappActionAllowed('owner', 'brands') && whatsappActionAllowed('viewer', 'brands'));
+  assert.ok(whatsappActionAllowed('owner', 'templates') && whatsappActionAllowed('admin', 'templates') && !whatsappActionAllowed('viewer', 'templates'));
   assert.ok(!whatsappActionAllowed('owner', 'sendnext') && !whatsappActionAllowed('owner', 'upload') && whatsappActionAllowed('admin', 'sendnext'));
   assert.ok(smsActionAllowed('owner', 'status') && !smsActionAllowed('owner', 'sendnext') && !smsActionAllowed('owner', 'upload'));
   assert.ok(smsActionAllowed('admin', 'sendnext') && smsActionAllowed('admin', 'upload') && !smsActionAllowed('viewer', 'status'));
