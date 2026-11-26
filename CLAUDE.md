@@ -86,7 +86,7 @@ unified-communication-automation · automation-dashboard · OCR · task-tracker 
 ### Apps Script projects and web apps
 | Project | Script ID | Web app `/exec` (needs `?key=`) |
 |---|---|---|
-| Automation Control Center | `1bqg1MgA09MZcD2Fai-Jq5s-j88dmqNOEkIL55BlIGTcpHvVNuyWG8Ws0` | `https://script.google.com/macros/s/AKfycbwJXy-XZJsxRQXFFrtJXCgCY0JEyaKOC3Dz6kYqGcwxy5kvONm3HZ46gXNvNlz1oU6EwA/exec` (version 17) |
+| Automation Control Center | `1bqg1MgA09MZcD2Fai-Jq5s-j88dmqNOEkIL55BlIGTcpHvVNuyWG8Ws0` | `https://script.google.com/macros/s/AKfycbwJXy-XZJsxRQXFFrtJXCgCY0JEyaKOC3Dz6kYqGcwxy5kvONm3HZ46gXNvNlz1oU6EwA/exec` (version 18 since 26 Nov 2026) |
 | Shaadi OCR | `1UZ04niHn9lSIYWlFROnrVdxOTB-1cp1XS39W-gPf4kOtvGpIyI_xRLFT` | `https://script.google.com/macros/s/AKfycbw_1-mVno9v_R1rRFt-Yzk-N_j_n4BO_LVxMZU3ihf8YfrAwKiLCPOQUUwt3BexZehJ/exec` (SmsApi) |
 | Property OCR | `1bR4FXxcLlzGWRnpmwnc7bseM-Ipd7DX4i-9113v8x1jMIdKl0I9mV0R3` | `https://script.google.com/macros/s/AKfycbzCR8mhq3dwwFfmAQloP_hQP9yNzNV6F7AlOe9TlvPPOXNDieCV6tFDxouhqnmYPHec/exec` (SmsApi) |
 | Caption | `1rCChkWwetgeBh1VDKSZ_OYRa2ppKL9DW1a60TLP3FkFN89bhP4HhH3a-` | - |
@@ -159,3 +159,4 @@ Most logic runs in **Google Apps Script**, which is not connected to git. The us
 - Logins: owner / admin / viewer (`lib/roles.js`, `lib/auth.js`, `middleware.js` sets `x-dash-role` for the routes). New Vercel setting `ADMIN_PASSWORD` (owner types it).
   Owner Home panel `components/status.js` (needs the OCR `SmsApi.gs` status with `auto` / `autoLast` / template fields).
 - Roles re-cut 26 Nov 2026 (owner's request): owner = read-only results + costs (replies-only inbox, templates, no actions); admin = operator without money (all sending, uploads, all chats, downloads, status panel). `lib/roles.js` CAPS.
+- WhatsApp template preview (PR #8, fix #9): owner + admin click a template name to see it as a WhatsApp bubble; sheet web app action `templates` (`ibTemplatePreview_` in ACC `common/Inbox.gs`, web app v18). `components/template-preview.js`, `lib/templates.js`.

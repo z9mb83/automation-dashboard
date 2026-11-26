@@ -2,12 +2,17 @@
 
 The dashboard only reads. Nothing here can stop mail, WhatsApp or SMS from being sent.
 Sending problems are documented in the sender repo:
-[`unified-communication-automation/TROUBLESHOOTING.md`](https://github.com/linkwithmarketing-design/unified-communication-automation/blob/main/TROUBLESHOOTING.md)
+[`unified-communication-automation/TROUBLESHOOTING.md`](https://github.com/z9mb83/unified-communication-automation/blob/main/TROUBLESHOOTING.md)
 and, for SMS, the `OCR` repo's `docs/TROUBLESHOOTING.md`.
 
 ## Can't open the dashboard
-- **Wrong password / asked again and again:** the password is `DASHBOARD_PASSWORD` in Vercel. Changing it (or `SHEET_API_KEY`) signs everyone out.
+- **Wrong password / asked again and again:** first pick the right card on the sign-in page. Owner = `DASHBOARD_PASSWORD`, Admin = `ADMIN_PASSWORD` (both in Vercel); Viewer needs none. Each password only works on its own card. Changing a password (or `SHEET_API_KEY`) signs everyone out.
+- **Admin card says no admin login:** `ADMIN_PASSWORD` is not set in Vercel. Add it (the owner types it), then Redeploy.
 - **"Dashboard password is not configured":** add `DASHBOARD_PASSWORD` in Vercel → Settings → Environment Variables, then Redeploy.
+
+## Template preview
+- **"Could not load" / empty window:** the sheet web app must be version 18 or later (action `templates`). Meta changes show after up to 10 minutes.
+- **Text running over the note:** fixed 26 Nov (PR #9); press Ctrl+F5 once to load the new version.
 
 ## Page shows "sample data"
 - `SHEET_API_URL` or `SHEET_API_KEY` is missing on Vercel. Add both (see README → Settings) and Redeploy.
