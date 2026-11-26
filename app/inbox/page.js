@@ -1,10 +1,11 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BRANDS, brandVar } from '../../lib/brands';
-import { FILTERS, chatFacts, dayLabel, filterChats, istStamp, listTime, needsReply, newContactBody, prettyPhone, replyQueue, replyWindow, telLink, threadItems, waLink } from '../../lib/inbox';
+import { FILTERS, brandCounts, chatFacts, dayLabel, filterChats, istStamp, listTime, needsReply, newContactBody, prettyPhone, pickBrand, replyWindow, telLink, threadItems, waLink } from '../../lib/inbox';
 
 const POLL_VISIBLE_MS = 5000, POLL_HIDDEN_MS = 30000;
-const SEEN_KEY = 'inbox-seen', NAME_KEY = 'inbox-name';
+const SEEN_KEY = 'inbox-seen', NAME_KEY = 'inbox-name', BRAND_KEY = 'inbox-brand';
+const CODES = BRANDS.map((b) => b.code);
 const brandName = (code) => (BRANDS.find((b) => b.code === code) || {}).name || 'Unknown brand';
 const indiaToday = () => new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
 const explainFailure = (e) => /131049/.test(e) ? 'Meta limited marketing messages to this person (try again later)'
@@ -17,7 +18,20 @@ export default function Inbox() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
-  const [brand, setBrand] = useState('ALL');
+  const [brand, setBrandState] = useState('ALL');
+  // brand tab: from the link (/inbox?brand=SB, so each team can bookmark its own inbox), else the last one picked here
+  useEffect(() => {
+    let saved = ''; try { saved = localStorage.getItem(BRAND_KEY) || ''; } catch (e) { /* private mode */ }
+    setBrandState(pickBrand(new URLSearchParams(window.location.search).get('brand') || saved, CODES));
+  }, []);
+  const setBrand = useCallback((b) => {
+    const v = pickBrand(b, CODES);
+    setBrandState(v);
+    try { localStorage.setItem(BRAND_KEY, v); } catch (e) { /* private mode */ }
+    const url = new URL(window.location.href);
+    if (v === 'ALL') url.searchParams.delete('brand'); else url.searchParams.set('brand', v);
+    window.history.replaceState(null, '', url);
+  }, []);
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState('');
   const [seen, setSeen] = useState({});
@@ -70,9 +84,10 @@ export default function Inbox() {
   const chats = data ? data.chats : [];
   const messages = useMemo(() => (data ? data.messages : []).concat(pending), [data, pending]);
   const list = useMemo(() => filterChats(chats, messages, { q, brand, filter, lastSeen: seen, nowMs: now }), [chats, messages, q, brand, filter, seen, now]);
-  const needsCount = useMemo(() => replyQueue(chats, messages, now).length, [chats, messages, now]);
+  const counts = useMemo(() => brandCounts(chats, messages, { brands: CODES, lastSeen: seen, nowMs: now }), [chats, messages, seen, now]);
+  const here = counts[brand] || counts.ALL;   // the filter buttons count only the chosen brand
   const open = chats.find((c) => c.id === openId) || null;
-  const unreadTotal = useMemo(() => chats.reduce((s, c) => s + chatFacts(c, messages, seen).unread, 0), [chats, messages, seen]);
+  const unreadTotal = counts.ALL.unread;
 
   useEffect(() => { document.title = (unreadTotal ? `(${unreadTotal}) ` : '') + 'Inbox · Automation Dashboard'; }, [unreadTotal]);
 
@@ -113,13 +128,23 @@ export default function Inbox() {
         <div className="wa-search">
           <input type="search" placeholder="Search number or name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search chats" />
         </div>
+        <div className="wa-brands" role="tablist" aria-label="Brand">
+          {[{ code: 'ALL', name: 'All brands' }].concat(BRANDS).map((b) => {
+            const n = counts[b.code] || {};
+            return (
+              <button key={b.code} role="tab" aria-selected={brand === b.code} onClick={() => setBrand(b.code)} title={b.name}
+                style={b.code === 'ALL' ? undefined : { '--brand': brandVar(b.code) }}>
+                <span className="wa-brand-name">{b.code === 'ALL' ? 'All' : b.code}</span>
+                <span className="wa-brand-count">{n.chats || 0} chat{n.chats === 1 ? '' : 's'}</span>
+                {n.needs ? <span className="wa-brand-needs" title="Waiting for a reply">{n.needs} to reply</span>
+                  : n.unread ? <span className="wa-brand-needs unread" title="Unread messages">{n.unread} new</span> : null}
+              </button>
+            );
+          })}
+        </div>
         <div className="wa-filters" role="group" aria-label="Filter chats">
           {FILTERS.map((f) => <button key={f.key} aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}>{f.label}
-            {f.key === 'unread' && unreadTotal ? ` ${unreadTotal}` : ''}{f.key === 'needs' && needsCount ? ` ${needsCount}` : ''}</button>)}
-          <select value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Brand">
-            <option value="ALL">All brands</option>
-            {BRANDS.map((b) => <option key={b.code} value={b.code}>{b.code}</option>)}
-          </select>
+            {f.key === 'unread' && here.unread ? ` ${here.unread}` : ''}{f.key === 'needs' && here.needs ? ` ${here.needs}` : ''}</button>)}
         </div>
         {data && !data.live ? <div className="wa-note">Test mode: only the WhatsApp test numbers receive messages.</div> : null}
         {warnings.map((w) => <div key={w.brand} className={'wa-note ' + (w.quality === 'RED' ? 'bad' : 'warn')}>
@@ -128,7 +153,7 @@ export default function Inbox() {
         {error ? <div className="wa-note bad">Could not refresh: {error}</div> : null}
         <ul className="wa-list">
           {!data && !error ? <li className="wa-empty">Loading…</li> : null}
-          {data && !list.length ? <li className="wa-empty">{q ? 'No chat matches “' + q + '”.' : 'No chats here.'}</li> : null}
+          {data && !list.length ? <li className="wa-empty">{q ? 'No chat matches “' + q + '”.' : brand !== 'ALL' ? `No ${brandName(brand)} chats here.` : 'No chats here.'}</li> : null}
           {list.map((c) => {
             const f = chatFacts(c, messages, seen), w = needsReply(c, messages, now) ? replyWindow(c, messages, now) : null;
             return (
@@ -166,7 +191,7 @@ export default function Inbox() {
           : <div className="wa-placeholder"><div><h2>WhatsApp inbox</h2><p>Select a chat to see the message we sent and every reply.<br />New replies appear here within a few seconds.</p></div></div>}
       </main>
 
-      {adding ? <NewContact data={data} onClose={() => setAdding(false)} act={act}
+      {adding ? <NewContact data={data} brand={brand} onClose={() => setAdding(false)} act={act}
         onDone={(out) => { setAdding(false); say(out.message); if (out.chat) { setOpenId(out.chat); setBrand('ALL'); setFilter('all'); setQ(''); } }} /> : null}
       {toast ? <div className="wa-toast" role="status">{toast}</div> : null}
     </div>
@@ -259,8 +284,8 @@ function Thread({ chat, messages, today, now, onBack, act, say, live, reply }) {
   );
 }
 
-function NewContact({ data, onClose, onDone, act }) {
-  const [f, setF] = useState({ brand: '', phone: '', name: '', email: '', details: '', source: 'Cold', send: true });
+function NewContact({ data, brand, onClose, onDone, act }) {
+  const [f, setF] = useState({ brand: brand && brand !== 'ALL' ? brand : '', phone: '', name: '', email: '', details: '', source: 'Cold', send: true });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [dup, setDup] = useState(null);
