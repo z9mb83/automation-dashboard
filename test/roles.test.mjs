@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { can, pathAllowed, inboxActionAllowed, whatsappActionAllowed, inboxForRole, maskPhone, maskEmail, maskName, maskDeep, dataForRole, smsForRole, HIDDEN } from '../lib/roles.js';
-import { roleForPassword, tokenFor, roleOf } from '../lib/auth.js';
+import { loginRole, roleForPassword, tokenFor, roleOf } from '../lib/auth.js';
 import { sampleSnapshot, sampleInbox, sampleMailThreads } from '../lib/sample.js';
 import { smsReportSheets } from '../lib/sms.js';
 
@@ -99,4 +99,15 @@ test('logins: owner and admin passwords, viewer without; cookies tell them apart
     assert.equal(await tokenFor('admin'), '');
     assert.equal(await roleOf(a), '');
   } finally { for (const k of Object.keys(env)) { if (k in saved) process.env[k] = saved[k]; else delete process.env[k]; } }
+});
+
+test('sign-in page: each password only opens its own login', () => {
+  const env = { DASHBOARD_PASSWORD: 'own-pass', ADMIN_PASSWORD: 'adm-pass' };
+  assert.equal(loginRole('owner', 'own-pass', env), 'owner');
+  assert.equal(loginRole('owner', 'adm-pass', env), '');
+  assert.equal(loginRole('admin', 'adm-pass', env), 'admin');
+  assert.equal(loginRole('admin', 'own-pass', env), '');
+  assert.equal(loginRole('admin', '', { ...env, ADMIN_PASSWORD: '' }), '');
+  assert.equal(loginRole('viewer', '', env), 'viewer');
+  assert.equal(loginRole('', 'own-pass', env), '');
 });

@@ -191,7 +191,7 @@ export default function Dashboard() {
               <button aria-pressed={theme === 'dark'} onClick={() => pickTheme('dark')}>Dark</button>
             </span>
             {role ? <span className={'role-badge ' + role} title="Who is signed in">{ROLE_LABEL[role]}</span> : null}
-            <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">{role === 'viewer' ? 'Sign in' : 'Sign out'}</button></form>
+            <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit" title="Back to the Owner / Admin / Viewer choice">Switch login</button></form>
           </div>
         </div>
         <div className="top-actions">{can(role, 'money') ? <CostButton /> : null}{can(role, 'inbox') ? <InboxButton /> : null}</div>
