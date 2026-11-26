@@ -75,7 +75,7 @@ unified-communication-automation · automation-dashboard · OCR · task-tracker 
 ### Google Sheets
 | Sheet | ID | Links to the websites inside the sheet |
 |---|---|---|
-| Automation Control Center | `1hiR6ofVNl9lpujWk8T8mGMml53ru0aJwC06NtUdeJTc` | Dashboard tab A2; Settings rows "Web dashboard", "Send SMS page", "Task tracker" |
+| Automation Control Center | not kept on GitHub (open it from Google Drive; the sheet is restricted) | Dashboard tab A2; Settings rows "Web dashboard", "Send SMS page", "Task tracker" |
 | Old email sheet (Zoho_Email_Automation) | `18hjldwZeoQ8Y99ngc02OVpoT_4Pe1rM0nNhS2KPxfOI` | - |
 | Shaadi OCR (SMS for SB) | `1FRZ7ErIx9vzN_dA-7eDjvQPyMUIMocGbFieL42G3LxE` | tab **Links** |
 | Property OCR / "Property NeoDove" (SMS for PE) | `1LRXRZ2TTRe8lCP5kPOYUvpA4cispuTRN3LgnYdaJSoE` | tab **Links** |
