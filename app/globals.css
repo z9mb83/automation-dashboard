@@ -496,3 +496,18 @@ html, body { min-height: 100vh; }
 .sms-upload label { font-weight: 600; font-size: 13px; }
 .sms-upload-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .sms-upload-row input[type="file"] { flex: 1; min-width: 0; font-size: 13px; }
+/* logins (26 Nov 2026): who is signed in */
+.role-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11.5px; font-weight: 600; background: var(--wash); color: var(--muted, inherit); border: 1px solid var(--border); }
+.role-badge.owner { color: var(--series-1); border-color: var(--series-1); }
+.role-badge.admin { color: var(--series-3); border-color: var(--series-3); }
+.role-badge.viewer { color: var(--series-5); border-color: var(--series-5); }
+.wa-role { font-size: 12px; color: var(--wa-sub); }
+.login-or { text-align: center; margin: 6px 0 0; font-size: 12.5px; }
+.login-viewer { width: 100%; background: none !important; color: inherit !important; border: 1px solid var(--border) !important; }
+.login-card form { display: grid; gap: 8px; }
+.login-card .login-viewer { color: var(--text-primary) !important; }
+/* owner: "What is switched on" panel (components/status.js) */
+.status-panel h3 { font-size: 14px; margin: 18px 0 6px; }
+.status-panel .status-line { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 13px; margin: 0 0 8px; }
+.status-chip { display: inline-flex; gap: 6px; align-items: center; }
+.tpl-text { font-size: 12px; color: var(--text-secondary); margin-top: 3px; white-space: pre-wrap; max-width: 520px; }
