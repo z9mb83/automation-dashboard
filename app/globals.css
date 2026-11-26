@@ -524,6 +524,7 @@ html, body { min-height: 100vh; }
 /* WhatsApp template preview (components/template-preview.js) */
 .tpl-link { font-weight: 600; text-align: left; }
 .tpl-modal { width: min(420px, 100%); }
+.tpl-modal > * { flex-shrink: 0; } /* long templates: scroll the window instead of squeezing the chat over the note */
 .tpl-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .tpl-modal-head h2 { margin: 0; font-size: 17px; }
 .tpl-chat { background: var(--wa-chat-bg, #efeae2); border-radius: 10px; padding: 14px 12px; min-height: 120px; }
