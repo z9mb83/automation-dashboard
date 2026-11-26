@@ -126,7 +126,7 @@ export default function Inbox() {
         <div className="wa-side-head">
           <a href="/" className="wa-back-home" aria-label="Back to dashboard">&larr;</a>
           <h1>Inbox</h1>
-          {me.send ? <button className="wa-new" onClick={() => setAdding(true)}>+ New contact</button> : <span className="wa-role">{me.label ? me.label + ' · replies only' : ''}</span>}
+          {me.send ? <button className="wa-new" onClick={() => setAdding(true)}>+ New contact</button> : <span className="wa-role">{me.label ? me.label + (me.reply ? '' : ' · replies only, read-only') : ''}</span>}
         </div>
         <div className="wa-search">
           <input type="search" placeholder="Search number or name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search chats" />
@@ -190,7 +190,7 @@ export default function Inbox() {
       </aside>
 
       <main className="wa-chat" aria-label="Conversation">
-        {open ? <Thread chat={open} messages={messages} today={today} now={now} onBack={() => setOpenId('')} act={act} say={say} live={data?.live} reply={reply} mayTemplate={me.send} />
+        {open ? <Thread chat={open} messages={messages} today={today} now={now} onBack={() => setOpenId('')} act={act} say={say} live={data?.live} reply={reply} mayTemplate={me.send} mayReply={me.reply} />
           : <div className="wa-placeholder"><div><h2>WhatsApp inbox</h2><p>Select a chat to see the message we sent and every reply.<br />New replies appear here within a few seconds.</p></div></div>}
       </main>
 
@@ -217,7 +217,7 @@ function Ticks({ status }) {
   );
 }
 
-function Thread({ chat, messages, today, now, onBack, act, say, live, reply, mayTemplate }) {
+function Thread({ chat, messages, today, now, onBack, act, say, live, reply, mayTemplate, mayReply }) {
   const win = replyWindow(chat, messages, now);
   const items = useMemo(() => threadItems(messages, chat.id), [messages, chat.id]);
   const end = useRef(null);
@@ -253,7 +253,7 @@ function Thread({ chat, messages, today, now, onBack, act, say, live, reply, may
       </header>
       {chat.flag ? <div className={'wa-banner ' + (chat.flag === 'Opted out' ? 'bad' : 'warn')}>
         {chat.flag === 'Opted out' ? 'Opted out: this person is in Do Not Contact and will not be messaged again.'
-          : <>They may not want messages (“possible opt-out”). <button className="linkbtn" disabled={busy} onClick={optOut}>Stop messaging them</button></>}
+          : <>They may not want messages (“possible opt-out”). {mayReply ? <button className="linkbtn" disabled={busy} onClick={optOut}>Stop messaging them</button> : null}</>}
       </div> : null}
       <div className="wa-thread" role="log" aria-live="polite">
         {items.map((m) => m.day ? <div key={'d' + m.day} className="wa-day"><span>{dayLabel(m.day, today)}</span></div> : (
@@ -271,7 +271,8 @@ function Thread({ chat, messages, today, now, onBack, act, say, live, reply, may
         ))}
         <div ref={end} />
       </div>
-      {win.open && !chat.optedOut && chat.flag !== 'Opted out'
+      {!mayReply ? <footer className="wa-foot"><span>Read-only: replies are answered by the admin.</span></footer>
+        : win.open && !chat.optedOut && chat.flag !== 'Opted out'
         ? <Composer key={chat.id} chat={chat} win={win} reply={reply} say={say} />
         : <footer className="wa-foot">
           {chat.optedOut || chat.flag === 'Opted out' ? <span>Opted out: no messages can be sent.</span>
@@ -280,7 +281,7 @@ function Thread({ chat, messages, today, now, onBack, act, say, live, reply, may
           {canSend ? <button className="wa-btn green" disabled={busy} onClick={send}>{busy ? 'Sending…' : 'Send template now'}</button> : null}
         </footer>}
       <div className="wa-foot-links">
-        {!chat.optedOut && !chat.flag ? <button className="linkbtn" disabled={busy} onClick={optOut}>Mark as opted out</button> : null}
+        {mayReply && !chat.optedOut && !chat.flag ? <button className="linkbtn" disabled={busy} onClick={optOut}>Mark as opted out</button> : null}
         {!live ? <span className="muted">Test mode is on: only test numbers receive messages.</span> : null}
       </div>
     </>
