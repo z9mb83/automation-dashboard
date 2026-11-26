@@ -150,3 +150,8 @@ Most logic runs in **Google Apps Script**, which is not connected to git. The us
 2. Apply the same change in the Apps Script editor (exact text replacement in the editor, then the **Save project to Drive** button; reload to check it saved).
 3. If the script is a web app: **Deploy → Manage deployments → Edit (pencil) → Version: New version → description → Deploy**. Editing the existing deployment keeps the `/exec` URL the same.
 4. Commit, push the branch, open a PR, wait for "merge". The repo must always match what is live.
+
+## 26 Nov 2026
+- Inbox: brand tabs with per-brand counts (`brandCounts`, `pickBrand` in `lib/inbox.js`), remembered in localStorage, `?brand=` link.
+- Send SMS: upload a phone list per brand (`app/api/sms-send` multipart → sheet action `bulkadd`, `smsUploadBody` in `lib/smssend.js`).
+  Needs the OCR projects' `SmsApi.gs` with `bulkadd` deployed as a new version of the same web app.
