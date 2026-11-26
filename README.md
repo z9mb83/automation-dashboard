@@ -27,6 +27,9 @@ Send Next 100 through its web app `SmsApi.gs` (OCR repo): already-texted, DND an
 (Excel download, sending costs) · **Inbox** (top right). Old links still work: `#mail`, `#whatsapp`, `#sms` open Analytics,
 `#costs` opens Reports & costs, `#send/99S` opens a brand's send page. Logos: WhatsApp Setup tab > Header media URL
 (Drive files shared "Anyone with the link"), served through `/api/logo`.
+Since 26 Nov 2026 each SMS card also has **Add numbers from a file** (.csv / .xlsx, phone column found automatically): new numbers go to the
+bottom of that OCR sheet (column A says `Upload: <file> (<date>)`), numbers already in it are skipped, nothing is sent until Send next 100
+or the automatic SMS batches (OCR repo, `src/SmsApi.gs` action `bulkadd`). Email and WhatsApp uploads are on each brand's page.
 
 ## What it shows
 Emails sent today (and failures) · sent / replies / reply rate / WhatsApp for 7, 14 or 30 days ·
@@ -42,7 +45,7 @@ Pages and buttons:
 | Header **Costs** button | This month's spend; hover for the breakdown (WhatsApp delivered marketing templates x Meta rate + 18% GST, SMS x Rs 0.22, email free). Rates: `lib/costs.js` (`RATES`) |
 | Mail | Charts above plus the **email reply tracker**: Needs reply / Answered / Marked handled / Auto-replies, waiting time, Gmail link to the thread, *Mark handled*. Data from the hidden `Mail Threads` tab (filled by the email sender every 15 minutes) |
 | WhatsApp | Sent / replies per day, what happened to the messages, Not delivered (with Meta's reason), read but no reply (follow-up calls) |
-| **Inbox** (top right) | WhatsApp conversations per brand, from the sheet feed (`?inbox=all`) |
+| **Inbox** (top right) | WhatsApp conversations, from the sheet feed (`?inbox=all`). Since 26 Nov 2026 a **brand tab** row (All · SB · 99M · 99S · PE · SC) with chats and "to reply" counts per brand; the choice is remembered in the browser and `/inbox?brand=SB` opens one brand directly (bookmark per team) |
 | SMS | Telinfy reports per template, delivered / failed / DND, stop list, **Excel report** download. Needs `TELINFY_API_KEY` |
 
 ## Settings (Vercel → Project → Settings → Environment Variables)

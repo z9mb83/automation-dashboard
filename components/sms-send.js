@@ -7,7 +7,8 @@ import { waPost } from './wa-bulk';
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
 
 async function smsPost(body) {
-  const res = await fetch('/api/sms-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const res = await fetch('/api/sms-send', body instanceof FormData ? { method: 'POST', body }
+    : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (res.status === 401) { window.location.href = '/login'; return { ok: false, message: 'Signed out.' }; }
   return res.json().catch(() => ({ ok: false, message: 'HTTP ' + res.status + ' (the send may still be running: refresh in a minute)' }));
 }
@@ -18,6 +19,8 @@ export function SmsSend() {
   const [logos, setLogos] = useState({});
   const [busy, setBusy] = useState('');
   const [result, setResult] = useState({});
+  const [files, setFiles] = useState({});
+  const [added, setAdded] = useState({});
 
   const load = useCallback(() => {
     smsPost({ action: 'status' }).then((r) => setInfo(r.ok ? r : { error: r.message })).catch((e) => setInfo({ error: String(e.message || e) }));
@@ -41,10 +44,24 @@ export function SmsSend() {
     load();
   };
 
+  // upload a phone list: numbers go below the last row of the brand's OCR sheet, nothing is sent yet
+  const upload = async (b) => {
+    const file = files[b.code];
+    if (!file) return;
+    setBusy('up-' + b.code);
+    setAdded((x) => ({ ...x, [b.code]: { msg: `Reading ${file.name} and adding the numbers…` } }));
+    const fd = new FormData(); fd.append('brand', b.code); fd.append('file', file);
+    const r = await smsPost(fd);
+    setBusy('');
+    setAdded((x) => ({ ...x, [b.code]: r.ok ? { ok: true, msg: `${file.name}: ${fmt(r.file?.rows)} rows (phone column: ${r.file?.column}). ${r.message}` }
+      : { msg: 'Not added: ' + (r.message || 'error') } }));
+    if (r.ok) { setFiles((x) => ({ ...x, [b.code]: null })); const el = document.getElementById('sms-file-' + b.code); if (el) el.value = ''; load(); }
+  };
+
   return (
     <div>
       <h2 className="page-title">Send SMS</h2>
-      <p className="muted" style={{ marginTop: 0 }}>Numbers come from the newspaper-ad sheets (Shaadi OCR and Property). <b>Send next 100</b> texts the next 100
+      <p className="muted" style={{ marginTop: 0 }}>Numbers come from the newspaper-ad sheets (Shaadi OCR and Property), or from a list you upload below. <b>Send next 100</b> texts the next 100
         numbers not texted yet, with the brand&apos;s DLT template through Telinfy. Numbers already texted, DND and not-in-use numbers are skipped.
         Promotional SMS go out only between 9 AM and 9 PM.</p>
       {info && info.error ? <div className="banner err">Could not load: {info.error}</div> : null}
@@ -68,6 +85,18 @@ export function SmsSend() {
               <div style={{ marginTop: 12 }}>
                 <button className="btn-primary" onClick={() => send(b)} disabled={!!busy || blocked}>
                   {busy === b.code ? 'Sending… (up to a minute)' : 'Send next 100'}</button>
+              </div>
+              <div className="sms-upload">
+                <label htmlFor={'sms-file-' + b.code}>Add numbers from a file (.csv or .xlsx)</label>
+                <div className="sms-upload-row">
+                  <input id={'sms-file-' + b.code} className="input" type="file" accept=".csv,.txt,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    onChange={(e) => setFiles((x) => ({ ...x, [b.code]: e.target.files[0] || null }))} disabled={!!busy || !!b.error} />
+                  <button className="btn-act" onClick={() => upload(b)} disabled={!!busy || !files[b.code]}>
+                    {busy === 'up-' + b.code ? 'Adding…' : 'Upload'}</button>
+                </div>
+                <div className="muted" style={{ fontSize: 12 }}>A phone column is found automatically (a Name column is used if there). New numbers are added to the
+                  bottom of the {b.sheet || 'OCR'} sheet; numbers already in it are skipped. Nothing is sent until <b>Send next 100</b> or the automatic batches.</div>
+                {added[b.code] ? <div className={'banner' + (added[b.code].ok || !/^Not added/.test(added[b.code].msg) ? '' : ' err')} style={{ marginTop: 8 }}>{added[b.code].msg}</div> : null}
               </div>
               {r ? (r.ok
                 ? <div className="banner" style={{ marginTop: 10 }}>Done: {fmt(r.sent)} accepted by Telinfy{r.failed ? `, ${fmt(r.failed)} failed` : ''}{r.skipped ? `, ${fmt(r.skipped)} skipped (duplicate / DND / not in use)` : ''}
