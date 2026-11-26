@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { BRANDS, brandVar } from '../lib/brands';
 import { WhatsAppBulk, UploadResults, waPost } from './wa-bulk';
+import { TemplateLink } from './template-preview';
 
 // mailbox room left today for a brand (enabled, not paused Gmail accounts)
 const mailRoom = (data, code) => (data && data.mailboxes || []).filter((m) => m.brand === code && m.enabled && !m.paused)
@@ -83,7 +84,7 @@ export function SendBrand({ code, data, back, analytics, kind = 'whatsapp' }) {
       <div className="brand-head">
         <Logo b={b} size={72} />
         <div><h2 style={{ margin: 0, fontSize: 22 }}>{meta.name}</h2>
-          <div className="muted">{kind === 'mail' ? 'Email' : b.template ? 'WhatsApp template: ' + b.template : ''}</div></div>
+          <div className="muted">{kind === 'mail' ? 'Email' : b.template ? <>WhatsApp template: <TemplateLink code={code} name={b.template} logo={b} /></> : ''}</div></div>
         <button className="btn-act" style={{ marginLeft: 'auto' }} onClick={() => analytics(code)}>View analytics &rarr;</button>
       </div>
       {kind === 'mail' ? (
