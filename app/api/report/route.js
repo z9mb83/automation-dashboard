@@ -3,6 +3,7 @@ import { indiaDate, reportFileName, reportParams, reportSheets } from '../../../
 import { sampleLeads } from '../../../lib/sample';
 import { smsFileName, smsParams, smsReportSheets } from '../../../lib/sms';
 import { sampleSmsRows, smsRows, telinfyKey } from '../../../lib/telinfy';
+import { can } from '../../../lib/roles';
 
 export const dynamic = 'force-dynamic';
 // The sheet feed reads every brand tab (SB ~85,000 rows): usually 15-25 s, longer while the sheet is busy
@@ -18,7 +19,7 @@ const xlsx = (sheets, name) => new Response(buildXlsx(sheets), { headers: {
 } });
 
 // SMS (OCR sheets, Telinfy): its own report from Telinfy's delivery reports
-async function smsReport(q) {
+async function smsReport(q, money) {
   const today = indiaDate();
   const p = smsParams({ from: q.from || today, to: q.to || q.from || today }, today);
   if (p.error) return fail(p.error);
@@ -27,14 +28,15 @@ async function smsReport(q) {
   try { rows = telinfyKey() ? await smsRows(p.from, p.to) : sampleSmsRows(p.from, p.to); }
   catch (e) { return fail('Could not read Telinfy reports: ' + String(e.message || e).slice(0, 200), 502); }
   const now = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 16).replace('T', ' ');
-  return xlsx(smsReportSheets(rows, { ...p, brand }, now), smsFileName({ ...p, brand }));
+  return xlsx(smsReportSheets(rows, { ...p, brand, money }, now), smsFileName({ ...p, brand }));
 }
 
 // GET /api/report?type=mail|whatsapp|combined|sms&brand=ALL|SB|...&from=yyyy-mm-dd&to=yyyy-mm-dd  ->  .xlsx download
 // (login is checked by middleware.js; the sheet key stays on the server)
 export async function GET(req) {
   const q = Object.fromEntries(new URL(req.url).searchParams);
-  if (q.type === 'sms') return smsReport(q);
+  // admin downloads: no money (the SMS report's cost column); viewer cannot open this route (middleware.js)
+  if (q.type === 'sms') return smsReport(q, can(req.headers.get('x-dash-role') || '', 'money'));
   const p = reportParams(q, indiaDate());
   if (p.error) return fail(p.error);
   const base = (process.env.SHEET_API_URL || '').trim(), key = (process.env.SHEET_API_KEY || '').trim();
