@@ -45,6 +45,7 @@ Pages and buttons:
 | Header **Costs** button | This month's spend; hover for the breakdown (WhatsApp delivered marketing templates x Meta rate + 18% GST, SMS x Rs 0.22, email free). Rates: `lib/costs.js` (`RATES`) |
 | Mail | Charts above plus the **email reply tracker**: Needs reply / Answered / Marked handled / Auto-replies, waiting time, Gmail link to the thread, *Mark handled*. Data from the hidden `Mail Threads` tab (filled by the email sender every 15 minutes) |
 | WhatsApp | Sent / replies per day, what happened to the messages, Not delivered (with Meta's reason), read but no reply (follow-up calls) |
+| **Logins** (26 Nov 2026) | **Owner** (`DASHBOARD_PASSWORD`): everything, incl. costs and the Home panel *What is switched on* (live / automatic sending, WhatsApp + SMS templates, Gmail senders). **Admin** (`ADMIN_PASSWORD`, set it in Vercel): analytics, report downloads (SMS report without the cost column), inbox with only the people who replied (can reply / opt out); no money, no sending, no uploads. **Viewer** (no password, *Continue as viewer*): analytics only, real figures with names, numbers, emails and message text masked on the server. Rules: `lib/roles.js` (tests `test/roles.test.mjs`), checked in `middleware.js` and each API route |
 | **Inbox** (top right) | WhatsApp conversations, from the sheet feed (`?inbox=all`). Since 26 Nov 2026 a **brand tab** row (All · SB · 99M · 99S · PE · SC) with chats and "to reply" counts per brand; the choice is remembered in the browser and `/inbox?brand=SB` opens one brand directly (bookmark per team) |
 | SMS | Telinfy reports per template, delivered / failed / DND, stop list, **Excel report** download. Needs `TELINFY_API_KEY` |
 
@@ -53,7 +54,8 @@ Pages and buttons:
 |---|---|
 | `SHEET_API_URL` | Sheet menu **AUTOMATION → Dashboard → Show feed link** (ends in `/exec`) |
 | `SHEET_API_KEY` | Sheet menu **AUTOMATION → Dashboard → Create access key** (shown once) |
-| `DASHBOARD_PASSWORD` | Any password you choose; people type it to open the dashboard |
+| `DASHBOARD_PASSWORD` | **Owner** password (sees everything, incl. costs) |
+| `ADMIN_PASSWORD` | **Admin** password (analytics, reports, replies only; no money, no sending). Must differ from the owner password. Not set = no admin login |
 | `TELINFY_API_KEY` | Telinfy (username `99consulting`) → Developer / API key. Only for the SMS page; stays on the server |
 | `SMS_SB_URL` / `SMS_PE_URL` | Send SMS page: the `/exec` link of the Shaadi OCR / Property sheet's web app (Apps Script → Deploy → Manage deployments) |
 | `SMS_SB_KEY` / `SMS_PE_KEY` | Send SMS page: in that sheet, menu **SMS → Dashboard access key** (shown once) |

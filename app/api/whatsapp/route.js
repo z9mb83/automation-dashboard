@@ -1,4 +1,5 @@
 import { readUpload } from '../../../lib/upload';
+import { whatsappActionAllowed } from '../../../lib/roles';
 import { BRANDS } from '../../../lib/brands';
 
 export const dynamic = 'force-dynamic';
@@ -25,9 +26,11 @@ async function callSheet(action, fields) {
 //   JSON {action: 'rowstatus', brand, rows}      -> WhatsApp status of those brand-tab rows (upload results table)
 // Login is checked by middleware.js; the sheet key stays on the server.
 export async function POST(req) {
+  const role = req.headers.get('x-dash-role') || '';   // admin / viewer: only the read-only brand cards (lib/roles.js)
   try {
     const type = req.headers.get('content-type') || '';
     if (type.includes('multipart/form-data')) {
+      if (!whatsappActionAllowed(role, 'upload')) return json({ ok: false, message: 'Only the owner can upload lists.' }, 403);
       const form = await req.formData();
       const brand = String(form.get('brand') || ''), file = form.get('file'), kind = form.get('kind') === 'mail' ? 'mail' : 'whatsapp';
       if (!okBrand(brand)) return json({ ok: false, message: 'Choose a brand.' }, 400);
@@ -41,6 +44,7 @@ export async function POST(req) {
     }
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || ''), brand = String(body.brand || '');
+    if (!whatsappActionAllowed(role, action)) return json({ ok: false, message: 'Only the owner can send.' }, 403);
     if (action === 'brands' || action === 'mailbrands') return json(await callSheet(action, {}));
     if (!['queue', 'sendnext', 'rowstatus', 'mailqueue', 'mailsendnext', 'mailrowstatus'].includes(action)) return json({ ok: false, message: 'Unknown action.' }, 400);
     if (!okBrand(brand)) return json({ ok: false, message: 'Choose a brand.' }, 400);

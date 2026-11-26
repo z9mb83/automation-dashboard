@@ -32,7 +32,7 @@ export function useMailThreads() {
   return { data, error, load, setData };
 }
 
-export function MailReplies({ brand, fallback }) {
+export function MailReplies({ brand, fallback, canHandle = true }) {
   const { data, error, load, setData } = useMailThreads();
   const [filter, setFilter] = useState('waiting');
   const [q, setQ] = useState('');
@@ -111,8 +111,8 @@ export function MailReplies({ brand, fallback }) {
             <div className="reply-actions">
               <a className="btn-act" target="_blank" rel="noopener noreferrer" href={gmailThreadLink(t)}>Open in Gmail</a>
               {t.phone ? <a className="btn-act" href={`tel:+${dial(t.phone)}`}>Call</a> : null}
-              {st === 'waiting' ? <button className="btn-act" disabled={busy === t.threadId} onClick={() => handle(t, true)}>Mark handled</button> : null}
-              {st === 'handled' ? <button className="btn-act" disabled={busy === t.threadId} onClick={() => handle(t, false)}>Undo</button> : null}
+              {canHandle && st === 'waiting' ? <button className="btn-act" disabled={busy === t.threadId} onClick={() => handle(t, true)}>Mark handled</button> : null}
+              {canHandle && st === 'handled' ? <button className="btn-act" disabled={busy === t.threadId} onClick={() => handle(t, false)}>Undo</button> : null}
             </div>
           </div>
         );

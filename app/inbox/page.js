@@ -40,6 +40,9 @@ export default function Inbox() {
   const [now, setNow] = useState(() => Date.now());
   const [pending, setPending] = useState([]);   // typed replies on their way (shown at once, replaced by the sheet's copy)
   const version = useRef('');
+  // owner: everything · admin: only people who replied (the server filters), can reply / opt out, no templates or new contacts
+  const [me, setMe] = useState({ send: false });
+  useEffect(() => { fetch('/api/me', { cache: 'no-store' }).then((r) => r.json()).then(setMe).catch(() => {}); }, []);
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(t); }, []);
   const today = indiaToday();
 
@@ -123,7 +126,7 @@ export default function Inbox() {
         <div className="wa-side-head">
           <a href="/" className="wa-back-home" aria-label="Back to dashboard">&larr;</a>
           <h1>Inbox</h1>
-          <button className="wa-new" onClick={() => setAdding(true)}>+ New contact</button>
+          {me.send ? <button className="wa-new" onClick={() => setAdding(true)}>+ New contact</button> : <span className="wa-role">{me.label ? me.label + ' · replies only' : ''}</span>}
         </div>
         <div className="wa-search">
           <input type="search" placeholder="Search number or name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search chats" />
@@ -187,7 +190,7 @@ export default function Inbox() {
       </aside>
 
       <main className="wa-chat" aria-label="Conversation">
-        {open ? <Thread chat={open} messages={messages} today={today} now={now} onBack={() => setOpenId('')} act={act} say={say} live={data?.live} reply={reply} />
+        {open ? <Thread chat={open} messages={messages} today={today} now={now} onBack={() => setOpenId('')} act={act} say={say} live={data?.live} reply={reply} mayTemplate={me.send} />
           : <div className="wa-placeholder"><div><h2>WhatsApp inbox</h2><p>Select a chat to see the message we sent and every reply.<br />New replies appear here within a few seconds.</p></div></div>}
       </main>
 
@@ -214,14 +217,14 @@ function Ticks({ status }) {
   );
 }
 
-function Thread({ chat, messages, today, now, onBack, act, say, live, reply }) {
+function Thread({ chat, messages, today, now, onBack, act, say, live, reply, mayTemplate }) {
   const win = replyWindow(chat, messages, now);
   const items = useMemo(() => threadItems(messages, chat.id), [messages, chat.id]);
   const end = useRef(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [items.length, chat.id]);
   const sentOk = items.some((m) => m.dir === 'out' && !m.auto && m.status !== 'failed');
-  const canSend = !chat.optedOut && chat.flag !== 'Opted out' && chat.row && !sentOk;
+  const canSend = mayTemplate && !chat.optedOut && chat.flag !== 'Opted out' && chat.row && !sentOk;
 
   const optOut = async () => {
     if (!window.confirm(`Stop all messages to ${prettyPhone(chat.phone)}?\n\nTheir number (and email, if the sheet has one) goes to Do Not Contact for every brand.`)) return;

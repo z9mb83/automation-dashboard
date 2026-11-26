@@ -10,6 +10,8 @@ import { InboxButton } from '../components/inbox-button';
 import { SmsView } from '../components/sms';
 import { MailReplies, useMailWaiting } from '../components/mail-replies';
 import { CostButton, CostSection } from '../components/costs';
+import { ROLE_LABEL, can } from '../lib/roles';
+import { SendingStatus } from '../components/status';
 
 const RANGES = [{ days: 7, label: '7 days' }, { days: 14, label: '14 days' }, { days: 30, label: '30 days' }];
 // Donut colours read without a legend: green = good outcome, red = problem, grey = waiting
@@ -95,6 +97,10 @@ export default function Dashboard() {
   const brandAnalytics = (code) => { setBrand(code); go('whatsapp'); };
   const brandMailAnalytics = (code) => { setBrand(code); go('mail'); };
   const isAnalytics = ANALYTICS.includes(page);
+  // which login this is (owner / admin / viewer, from the server); the server also refuses what a login may not do
+  const role = data?.role || '';
+  const mayPage = (p) => (['send', 'email', 'send-sms'].includes(p) ? can(role, 'send') : p === 'reports' ? can(role, 'reports') : true);
+  const shown = !role || mayPage(page) ? page : 'home';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -184,22 +190,26 @@ export default function Dashboard() {
               <button aria-pressed={theme === 'light'} onClick={() => pickTheme('light')}>Light</button>
               <button aria-pressed={theme === 'dark'} onClick={() => pickTheme('dark')}>Dark</button>
             </span>
-            <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">Sign out</button></form>
+            {role ? <span className={'role-badge ' + role} title="Who is signed in">{ROLE_LABEL[role]}</span> : null}
+            <form method="post" action="/api/logout" style={{ display: 'inline' }}><button className="linkbtn" type="submit">{role === 'viewer' ? 'Sign in' : 'Sign out'}</button></form>
           </div>
         </div>
-        <div className="top-actions"><CostButton /><InboxButton /></div>
+        <div className="top-actions">{can(role, 'money') ? <CostButton /> : null}{can(role, 'inbox') ? <InboxButton /> : null}</div>
       </header>
 
+      {role === 'viewer' ? <div className="banner">Viewer mode: real figures, with names, phone numbers, emails and messages hidden.</div> : null}
       {data?.sample ? <div className="banner">Showing <b>sample data</b>: the sheet feed is not connected yet (set SHEET_API_URL and SHEET_API_KEY on Vercel).</div> : null}
       {error ? <div className="banner err">Could not refresh: {error}{data ? ' Showing the last good data.' : ''}</div> : null}
 
       <nav className="tabs main-nav" aria-label="Pages">
         <div className="seg">
-          <button aria-pressed={page === 'home'} onClick={() => go('home')}>Home</button>
-          <button aria-pressed={page === 'send'} onClick={() => go('send')}>Send WhatsApp</button>
-          <button aria-pressed={page === 'email'} onClick={() => go('email')}>Send Email</button>
-          <button aria-pressed={page === 'send-sms'} onClick={() => go('send-sms')}>Send SMS</button>
-          <button aria-pressed={page === 'reports'} onClick={() => go('reports')}>Reports &amp; costs</button>
+          <button aria-pressed={shown === 'home'} onClick={() => go('home')}>Home</button>
+          {can(role, 'send') ? <>
+            <button aria-pressed={shown === 'send'} onClick={() => go('send')}>Send WhatsApp</button>
+            <button aria-pressed={shown === 'email'} onClick={() => go('email')}>Send Email</button>
+            <button aria-pressed={shown === 'send-sms'} onClick={() => go('send-sms')}>Send SMS</button>
+          </> : <button aria-pressed={isAnalytics} onClick={() => go('whatsapp')}>Analytics</button>}
+          {can(role, 'reports') ? <button aria-pressed={shown === 'reports'} onClick={() => go('reports')}>{can(role, 'money') ? <>Reports &amp; costs</> : 'Reports'}</button> : null}
         </div>
       </nav>
 
@@ -229,14 +239,14 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      {view && page === 'home' ? <Home view={view} go={go} /> : null}
-      {view && page === 'sms' ? <SmsView range={range} brand={brand} /> : null}
-      {view && page === 'send' && !sendBrand ? <SendLanding open={openSend} data={data} /> : null}
-      {view && page === 'send' && sendBrand ? <SendBrand code={sendBrand} data={data} back={() => go('send')} analytics={brandAnalytics} /> : null}
-      {view && page === 'email' && !sendBrand ? <SendLanding kind="mail" open={openEmail} data={data} /> : null}
-      {view && page === 'email' && sendBrand ? <SendBrand kind="mail" code={sendBrand} data={data} back={() => go('email')} analytics={brandMailAnalytics} /> : null}
-      {view && page === 'send-sms' ? <SmsSend /> : null}
-      {view && page === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" /><CostSection /></div> : null}
+      {view && shown === 'home' ? <Home view={view} go={go} role={role} data={data} /> : null}
+      {view && shown === 'sms' ? <SmsView range={range} brand={brand} money={can(role, 'money')} /> : null}
+      {view && shown === 'send' && !sendBrand ? <SendLanding open={openSend} data={data} /> : null}
+      {view && shown === 'send' && sendBrand ? <SendBrand code={sendBrand} data={data} back={() => go('send')} analytics={brandAnalytics} /> : null}
+      {view && shown === 'email' && !sendBrand ? <SendLanding kind="mail" open={openEmail} data={data} /> : null}
+      {view && shown === 'email' && sendBrand ? <SendBrand kind="mail" code={sendBrand} data={data} back={() => go('email')} analytics={brandMailAnalytics} /> : null}
+      {view && shown === 'send-sms' ? <SmsSend /> : null}
+      {view && shown === 'reports' ? <div><ReportCard defaultType="combined" defaultBrand="ALL" />{can(role, 'money') ? <CostSection /> : null}</div> : null}
       {view && page === 'whatsapp' ? <WhatsAppView view={view} data={data} range={range} loading={loading && manual} /> : null}
       {view && page === 'mail' ? (
         <div className={loading && manual ? 'stale' : ''}>
@@ -250,7 +260,7 @@ export default function Dashboard() {
             <div className="card tile"><div className="label">Approved, waiting</div><div className="value">{fmt(view.approved)}</div><div className="note">{fmt(view.drafts)} drafts to review</div></div>
           </div>
 
-          <MailReplies brand={brand} fallback={<div className="section">
+          <MailReplies brand={brand} canHandle={can(role, 'mailHandle')} fallback={<div className="section">
             <section className="card">
               <h2>Latest replies</h2><p className="sub">Leads who replied to our emails (newest first). Reply from the mailbox that sent the email, so the conversation stays in one thread.</p>
               <div className="tablewrap">{view.replyList.length ? (
@@ -374,7 +384,7 @@ function PipelineTable({ brands }) {
   );
 }
 
-function Home({ view, go }) {
+function Home({ view, go, role, data }) {
   const mailWaiting = useMailWaiting();
   const attention = [];
   if (mailWaiting) attention.push(`${mailWaiting} email repl${mailWaiting > 1 ? 'ies' : 'y'} waiting for an answer`);
@@ -388,7 +398,7 @@ function Home({ view, go }) {
         <div className="card tile hero"><div className="label">WhatsApp sent today</div><div className="value">{fmt(view.waTodayMsgs)}</div>
           <div className="note">all brands</div></div>
         <div className="card tile"><div className="label">WhatsApp replies today</div><div className="value">{fmt(view.waTodayReplies)}</div>
-          <div className="note">answer them in the Inbox</div></div>
+          <div className="note">{can(role, 'inbox') ? 'answer them in the Inbox' : 'all brands'}</div></div>
         <div className="card tile"><div className="label">Emails sent today</div><div className="value">{fmt(view.today)}</div>
           <div className="note">{view.failedToday ? `${view.failedToday} failed` : 'no failures'}</div></div>
         <div className="card tile"><div className="label">Email replies to answer</div>
@@ -399,14 +409,15 @@ function Home({ view, go }) {
 
       <h2 className="page-title" style={{ marginTop: 22 }}>What do you want to do?</h2>
       <div className="grid three">
-        <ActionCard icon={<ChatIcon />} title="Send WhatsApp" text="Upload a phone list for a brand, then send to the next 30 numbers." onClick={() => go('send')} />
-        <ActionCard icon={<ChatIcon />} title="Inbox" text="Read and answer WhatsApp chats from customers." href="/inbox" />
-        <ActionCard icon={<MailIcon />} title="Send Email" text="Upload an email list for a brand, then send AI-written emails to the next 25." onClick={() => go('email')} />
-        <ActionCard icon={<ChatIcon />} title="Send SMS" text="Text the next 100 numbers from the newspaper-ad sheets (Shaadi Bells, Property Experts)." onClick={() => go('send-sms')} />
-        <ActionCard icon={<MailIcon />} title="Email replies" text="Leads who answered our emails, with a link to the Gmail thread." onClick={() => go('mail')} />
-        <ActionCard icon={<ReportIcon />} title="Reports & costs" text="Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost." onClick={() => go('reports')} />
+        {can(role, 'send') ? <ActionCard icon={<ChatIcon />} title="Send WhatsApp" text="Upload a phone list for a brand, then send to the next 30 numbers." onClick={() => go('send')} /> : null}
+        {can(role, 'inbox') ? <ActionCard icon={<ChatIcon />} title="Inbox" text={can(role, 'send') ? 'Read and answer WhatsApp chats from customers.' : 'Read and answer the people who replied on WhatsApp.'} href="/inbox" /> : null}
+        {can(role, 'send') ? <ActionCard icon={<MailIcon />} title="Send Email" text="Upload an email list for a brand, then send AI-written emails to the next 25." onClick={() => go('email')} /> : null}
+        {can(role, 'send') ? <ActionCard icon={<ChatIcon />} title="Send SMS" text="Text the next 100 numbers from the newspaper-ad sheets (Shaadi Bells, Property Experts)." onClick={() => go('send-sms')} /> : null}
+        <ActionCard icon={<MailIcon />} title="Email replies" text={role === 'viewer' ? 'How many leads answered our emails, per brand.' : 'Leads who answered our emails, with a link to the Gmail thread.'} onClick={() => go('mail')} />
+        {can(role, 'reports') ? <ActionCard icon={<ReportIcon />} title={can(role, 'money') ? 'Reports & costs' : 'Reports'} text={can(role, 'money') ? 'Download Excel reports (Mail, WhatsApp, SMS) and see what sending cost.' : 'Download Excel reports (Mail, WhatsApp, SMS).'} onClick={() => go('reports')} /> : null}
         <ActionCard icon={<ChartIcon />} title="Analytics" text="Charts and trends: sends, replies, delivery, pipeline, mailboxes." onClick={() => go('whatsapp')} />
       </div>
+      {role === 'owner' ? <SendingStatus data={data} mailboxStatus={mailboxStatus} /> : null}
     </div>
   );
 }

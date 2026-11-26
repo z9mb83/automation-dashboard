@@ -48,7 +48,7 @@ export function SmsChoice({ go }) {
   );
 }
 
-export function SmsView({ range, brand }) {
+export function SmsView({ range, brand, money = true }) {
   const { data, error, loading, load } = useSms(range);
   const s = useMemo(() => (data ? smsSummary(data.rows, { from: data.from, to: data.to, brand }) : null), [data, brand]);
   const stops = useMemo(() => (data ? stopList(data.rows.filter((r) => brand === 'ALL' || r.brand === brand)) : []), [data, brand]);
@@ -76,8 +76,8 @@ export function SmsView({ range, brand }) {
         <div className="card tile"><div className="label">Delivered</div><div className="value">{fmt(s.total.delivered)}</div><div className="note">{s.deliveredPct}% of those with a report</div></div>
         <div className="card tile"><div className="label">Blocked by DND</div><div className="value">{fmt(s.total.dnd)}</div><div className="note">charged but never delivered</div></div>
         <div className="card tile"><div className="label">Other failures</div><div className="value">{fmt(failed - s.total.dnd)}</div><div className="note">number not in use, phone off…</div></div>
-        <div className="card tile"><div className="label">Cost (estimate)</div><div className="value">{rupees(s.cost)}</div><div className="note">₹{RATE} per SMS · {rupees(s.total.dnd * RATE)} on DND</div></div>
-        <div className="card tile"><div className="label">Telinfy wallet</div><div className="value" style={{ fontSize: data.wallet === null ? 18 : undefined }}>{data.wallet === null ? '–' : rupees(data.wallet)}</div><div className="note">balance now</div></div>
+        {money ? <><div className="card tile"><div className="label">Cost (estimate)</div><div className="value">{rupees(s.cost)}</div><div className="note">₹{RATE} per SMS · {rupees(s.total.dnd * RATE)} on DND</div></div>
+        <div className="card tile"><div className="label">Telinfy wallet</div><div className="value" style={{ fontSize: data.wallet === null ? 18 : undefined }}>{data.wallet === null ? '–' : rupees(data.wallet)}</div><div className="note">balance now</div></div></> : null}
       </div>
 
       <div className="section">
@@ -99,13 +99,13 @@ export function SmsView({ range, brand }) {
         <section className="card">
           <h2>Per template</h2><p className="sub">Each SMS is matched to its DLT template by its text</p>
           <div className="tablewrap"><table className="stack">
-            <thead><tr><th>Template</th><th className="r">Sent</th><th className="r">Delivered</th><th className="r">DND</th><th className="r">Other failed</th><th className="r">Cost</th></tr></thead>
+            <thead><tr><th>Template</th><th className="r">Sent</th><th className="r">Delivered</th><th className="r">DND</th><th className="r">Other failed</th>{money ? <th className="r">Cost</th> : null}</tr></thead>
             <tbody>{s.byTemplate.length ? s.byTemplate.map((t) => {
               const settled = t.sent - t.pending;
               return (
                 <tr key={t.key}><td><span className="brandcell"><i className="swatch" style={{ background: brandVar(t.brand || 'SB') }} />{t.name}</span></td>
                   <td className="r">{t.sent}</td><td className="r">{t.delivered}{settled ? <span className="muted"> ({Math.round((t.delivered / settled) * 100)}%)</span> : null}</td>
-                  <td className="r">{t.dnd}</td><td className="r">{t.invalid + t.unreachable + t.other}</td><td className="r">{rupees(t.sent * RATE)}</td></tr>
+                  <td className="r">{t.dnd}</td><td className="r">{t.invalid + t.unreachable + t.other}</td>{money ? <td className="r">{rupees(t.sent * RATE)}</td> : null}</tr>
               );
             }) : <tr><td colSpan={6} className="empty">No SMS in this period.</td></tr>}</tbody>
           </table></div>

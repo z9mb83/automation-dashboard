@@ -1,4 +1,5 @@
 import { sampleMailThreads } from '../../../lib/sample';
+import { maskDeep } from '../../../lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,15 +13,17 @@ async function readJson(res) {
 }
 
 // GET /api/mail -> email reply tracker (Mail Threads tab). Login is checked by middleware.js.
-export async function GET() {
+export async function GET(req) {
+  const role = req.headers.get('x-dash-role') || '';
+  const out = (d) => json(role === 'viewer' ? maskDeep(d) : d);   // viewer: names / emails / subjects masked
   const { base, key } = feed();
-  if (!base || !key) return json({ ...sampleMailThreads(), sample: true });
+  if (!base || !key) return out({ ...sampleMailThreads(), sample: true });
   try {
     const res = await fetch(withQuery(base, `mail=threads&key=${encodeURIComponent(key)}`), { cache: 'no-store', redirect: 'follow' });
     const data = await readJson(res);
     if (data.error) return json({ error: data.error === 'unauthorized' ? 'The sheet key on Vercel does not match.' : data.error }, 502);
     if (!Array.isArray(data.threads)) return json({ error: 'The sheet feed is an older version without email replies: deploy the new web-app version in Apps Script.' }, 502);
-    return json(data);
+    return out(data);
   } catch (e) {
     return json({ error: String(e.message || e).slice(0, 300) }, 502);
   }

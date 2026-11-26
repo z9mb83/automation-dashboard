@@ -16,7 +16,8 @@ brand pages, not the top menu) · `/inbox` WhatsApp-style inbox · `/login`.
 |---|---|
 | `SHEET_API_URL` | Apps Script web app `/exec` URL (sheet menu AUTOMATION → Dashboard → Show feed link) |
 | `SHEET_API_KEY` | access key made in the same menu |
-| `DASHBOARD_PASSWORD` | login password for the dashboard |
+| `DASHBOARD_PASSWORD` | owner login password |
+| `ADMIN_PASSWORD` | admin login password (optional; viewer needs none) |
 | `TELINFY_API_KEY` | Telinfy (user 99consulting) API key, only for the SMS page |
 | `SMS_SB_URL`, `SMS_SB_KEY`, `SMS_PE_URL`, `SMS_PE_KEY` | Send SMS page: web app `/exec` link + access key (menu SMS → Dashboard access key) of the Shaadi OCR and Property sheets (OCR repo, `src/SmsApi.gs`) |
 
@@ -63,7 +64,7 @@ Without the sheet variables the page shows clearly-labelled sample data.
 | Old addresses (old Vercel account, retired; delete when no longer needed) | automation-dashboard-sigma-rose.vercel.app, task-tracker-sable-omega.vercel.app | old account |
 
 Every push to `main` of the z9mb83 repo redeploys that site. Vercel settings (Settings → Environment Variables), values only in Vercel:
-- automation-dashboard: `SHEET_API_URL`, `SHEET_API_KEY`, `DASHBOARD_PASSWORD`, `TELINFY_API_KEY`, `SMS_SB_URL`, `SMS_SB_KEY`, `SMS_PE_URL`, `SMS_PE_KEY`
+- automation-dashboard: `SHEET_API_URL`, `SHEET_API_KEY`, `DASHBOARD_PASSWORD`, `ADMIN_PASSWORD`, `TELINFY_API_KEY`, `SMS_SB_URL`, `SMS_SB_KEY`, `SMS_PE_URL`, `SMS_PE_KEY`
 - task-tracker: `APPS_SCRIPT_URL`, `API_SECRET`, `TASK_MANAGER_PIN`
 Vercel sometimes asks to "verify your identity" with a 6-digit email code: the owner types it.
 
@@ -155,3 +156,5 @@ Most logic runs in **Google Apps Script**, which is not connected to git. The us
 - Inbox: brand tabs with per-brand counts (`brandCounts`, `pickBrand` in `lib/inbox.js`), remembered in localStorage, `?brand=` link.
 - Send SMS: upload a phone list per brand (`app/api/sms-send` multipart → sheet action `bulkadd`, `smsUploadBody` in `lib/smssend.js`).
   Needs the OCR projects' `SmsApi.gs` with `bulkadd` deployed as a new version of the same web app.
+- Logins: owner / admin / viewer (`lib/roles.js`, `lib/auth.js`, `middleware.js` sets `x-dash-role` for the routes). New Vercel setting `ADMIN_PASSWORD` (owner types it).
+  Owner Home panel `components/status.js` (needs the OCR `SmsApi.gs` status with `auto` / `autoLast` / template fields).
