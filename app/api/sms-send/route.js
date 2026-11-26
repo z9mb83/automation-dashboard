@@ -1,5 +1,6 @@
 import { SMS_SHEETS, smsTarget, smsUploadBody, smsUrl } from '../../../lib/smssend';
 import { readUpload } from '../../../lib/upload';
+import { smsActionAllowed } from '../../../lib/roles';
 
 export const dynamic = 'force-dynamic';
 // "Send next 100" runs the sheet's own batch sender: 2 Telinfy calls + a status write, usually 10-30 s.
@@ -29,8 +30,10 @@ async function call(t, action, post, body = {}) {
 //                                      (already in the sheet / invalid / repeated numbers are skipped; nothing is sent)
 // Login is checked by middleware.js; the sheet keys stay on the server.
 export async function POST(req) {
+  const role = req.headers.get('x-dash-role') || '';   // owner: status only (templates); admin: everything (lib/roles.js)
   try {
     if ((req.headers.get('content-type') || '').includes('multipart/form-data')) {
+      if (!smsActionAllowed(role, 'upload')) return json({ ok: false, message: 'Only the admin can upload lists.' }, 403);
       const form = await req.formData();
       const t = smsTarget(String(form.get('brand') || '')), file = form.get('file');
       if (!t) return json({ ok: false, message: 'This brand has no SMS sheet.' }, 400);
@@ -43,6 +46,7 @@ export async function POST(req) {
     }
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || '');
+    if (!smsActionAllowed(role, action)) return json({ ok: false, message: 'Only the admin can send.' }, 403);
     if (action === 'status') {
       const brands = await Promise.all(SMS_SHEETS.map(async (s) => {
         const r = await call(smsTarget(s.code), 'status', false).catch((e) => ({ ok: false, message: String(e.message || e) }));
